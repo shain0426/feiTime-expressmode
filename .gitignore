@@ -1,0 +1,56 @@
+# =====================
+# Node / npm
+# =====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =====================
+# Environment variables
+# =====================
+.env
+.env.*
+!.env.example
+
+# =====================
+# Build / Compile output
+# =====================
+dist/
+build/
+out/
+
+# =====================
+# TypeScript
+# =====================
+*.tsbuildinfo
+
+# =====================
+# Runtime files
+# =====================
+*.log
+logs/
+
+# =====================
+# OS / Editor
+# =====================
+.DS_Store
+Thumbs.db
+
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+
+# =====================
+# Test / Coverage
+# =====================
+coverage/
+
+# =====================
+# Misc
+# =====================
+.tmp
+.cache
