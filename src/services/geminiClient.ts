@@ -1,5 +1,5 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import type { GeminiOptions } from "@/types/gemini";
+import type { GeminiMessage, GeminiOptions } from "@/types/gemini";
 
 /** 建立 Gemini client */
 export function createGeminiClient(): GoogleGenAI {
@@ -27,7 +27,7 @@ function isRetryableGeminiError(e: unknown): boolean {
 
 /** Gemini 文字生成函數 */
 export async function geminiText(
-  prompt: string,
+  messages: GeminiMessage[],
   options: GeminiOptions = {}
 ): Promise<string> {
   const {
@@ -43,7 +43,9 @@ export async function geminiText(
       const response: GenerateContentResponse = await ai.models.generateContent(
         {
           model,
-          contents: prompt,
+          contents: messages.map(
+            (msg) => `${msg.role.toUpperCase()}: ${msg.content}`
+          ),
         }
       );
       return response.text ?? "";
