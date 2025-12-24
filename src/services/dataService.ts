@@ -14,6 +14,7 @@ const strapiClient = axios.create({
   baseURL: process.env.STRAPI_URL,
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`,
   },
 });
 
@@ -24,7 +25,7 @@ export const fetchStrapiData = async (
   pageSize = 100
 ) => {
   try {
-    const res = await strapiClient.get(`/${collectionName}`, {
+    const res = await strapiClient.get(`/api/${collectionName}`, {
       params: {
         populate,
         "pagination[page]": page,
