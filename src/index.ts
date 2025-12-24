@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import routes from "./routes/index";
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 //讀取 .env 環境變數，例如 GEMINI_API_KEY
 dotenv.config();
