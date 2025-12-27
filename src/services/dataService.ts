@@ -38,8 +38,15 @@ export const fetchStrapiData = async (
   options?: {
     fields?: string[];
     filters?: Record<string, any>;
-    sort?: string[];
+    // Record<string, any> 是TS的寫法 他定義一個物件
+    // string  物件的 key 必須是字串
+    // any  物件的 value 型別不限
+    sort?: string[]; // string[] 是裡面只能裝字串的陣列
   }
+  //  ? 代表可有可無
+  //  fetchStrapiData的第五個參數為 options物件 他可帶可不帶
+  //  options物件內有 fields filters sort 它們也都可有可無
+  //  fields filters sort 是 Strapi  定義的「功能關鍵字」
 ) => {
   try {
     // 初始化 params，放基本的分頁與 populate 設定
