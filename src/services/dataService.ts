@@ -82,7 +82,7 @@ export const fetchStrapiData = async (
     // 例如 filters[origin][$eq]=Taiwan
     if (options?.filters) {
       Object.keys(options.filters).forEach((key) => {
-        // Object.keys()是JS的現成函數 可以把帶進去的物件的key 抓出來變成一個陣列
+        // Object.keys() 是JS的現成函數 可以把帶進去的物件的key 抓出來變成一個陣列
         // 變數 = Object.keys(某物件)  變數就會是所有key的陣列
         // 所以這邊 Object.keys(options.filters) = 所有key的陣列
         const value = options.filters![key];

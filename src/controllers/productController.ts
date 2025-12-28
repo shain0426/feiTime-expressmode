@@ -7,6 +7,9 @@ export async function productHandler(req: Request, res: Response) {
     // req 是前端要傳給後端的資料
     // query 是網址後面的參數
     // req.query.roast 就等於告訴後端 從網址中找到?roast=xxxxxx  也就是xxxxx
+    const origin = req.query.origin;
+    const processing = req.query.processing;
+    const flavor_type = req.query.flavor_type;
 
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 100;
@@ -20,6 +23,9 @@ export async function productHandler(req: Request, res: Response) {
         // 如果有roast 變成    淺焙 && { roast: { $eq: 淺焙 } }
         // 依照JS 當A、B都是true   A && B 會是B
         // 整條會變成 { roast: { $eq: 淺焙 } }
+        ...(origin && { origin: { $eq: origin } }),
+        ...(processing && { processing: { $eq: processing } }),
+        ...(flavor_type && { flavor_type: { $eq: flavor_type } }),
       },
     };
 
