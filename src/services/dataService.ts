@@ -108,7 +108,7 @@ export const fetchStrapiData = async (
     // sort[0]=price:desc
     // Strapi 規定排序字串要寫成 欄位名:方式。
     // price:asc (價格低到高)
-    // price:desc (價格高到高)
+    // price:desc (價格高到低)
 
     if (options?.sort?.length) {
       options.sort.forEach((s, index) => {
