@@ -10,6 +10,7 @@ export async function productHandler(req: Request, res: Response) {
     const origin = req.query.origin;
     const processing = req.query.processing;
     const flavor_type = req.query.flavor_type;
+    const sort = req.query.sort;
 
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 100;
@@ -26,6 +27,7 @@ export async function productHandler(req: Request, res: Response) {
         ...(origin && { origin: { $eq: origin } }),
         ...(processing && { processing: { $eq: processing } }),
         ...(flavor_type && { flavor_type: { $eq: flavor_type } }),
+        ...(sort && { sort: Array.isArray(sort) ? sort : [sort] }),
       },
     };
 
