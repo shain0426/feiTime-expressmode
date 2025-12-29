@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Request, Response } from "express";
-const STRAPI_URL = "https://accessible-dogs-da5b6a029a.strapiapp.com";
+const STRAPI_URL = process.env.STRAPI_URL;
 export async function questionHandler(req: Request, res: Response) {
   try {
     const response = await axios.get(`${STRAPI_URL}/api/questions`, {
