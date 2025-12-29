@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { fetchStrapiData } from "@/services/dataService";
-
+const STRAPI_URL = process.env.STRAPI_URL;
 export async function productHandler(req: Request, res: Response) {
   try {
     const roast = req.query.roast;
