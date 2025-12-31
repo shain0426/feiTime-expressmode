@@ -341,7 +341,7 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
           const products = await searchCoffeeForAssistant(searchQuery);
 
           if (products && products.length > 0) {
-            productContext = `\n\n【查詢結果: ${products.length}款符合條件】\n`;
+            productContext = `\n\n【店內符合商品: ${products.length}款】\n`;
             products.forEach((p: any, i: number) => {
               const a = p.attributes || p;
               productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
@@ -355,7 +355,9 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
             stageInstruction = `
 【當前階段】推薦產品
 
-根據顧客偏好（${JSON.stringify(prefs)}），從查詢結果中推薦2-3款最適合的產品。
+根據顧客偏好（${JSON.stringify(
+              prefs
+            )}），從上方「店內商品」中推薦2-3款最適合的產品。
 
 推薦格式：
 - 使用 <strong>產品名稱</strong> 標示
@@ -363,16 +365,47 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
 - 標註價格和關鍵風味特點
 - 用親切的語氣，像是在咖啡店推薦豆子給朋友
 
+⚠️ 只推薦上方列出的店內實際販售商品
+⚠️ 絕不提及其他品牌或店外產品
+
 如果顧客還想看更多，可以詢問是否要調整條件。
 `;
           } else {
-            stageInstruction = `
-【當前階段】推薦產品（無符合結果）
+            // 嘗試放寬條件查詢相近產品
+            const relaxedQuery = { ...searchQuery };
+            delete relaxedQuery.minAcidity;
+            delete relaxedQuery.maxAcidity;
+            if (relaxedQuery.maxPrice) {
+              relaxedQuery.maxPrice += 200;
+            }
 
-查無完全符合的產品。請：
-1. 說明目前沒有完全符合的選項
-2. 推薦最接近的替代方案（放寬某個條件）
-3. 詢問顧客是否願意調整需求
+            const alternativeProducts = await searchCoffeeForAssistant(
+              relaxedQuery
+            );
+
+            if (alternativeProducts && alternativeProducts.length > 0) {
+              productContext = `\n\n【店內相近商品: ${alternativeProducts.length}款】\n`;
+              alternativeProducts.slice(0, 3).forEach((p: any, i: number) => {
+                const a = p.attributes || p;
+                productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
+                  a.roast
+                } | ${a.flavor_type}\n`;
+                productContext += `   酸度${a.acidity} 甜度${a.sweetness} 醇厚${a.body} | $${a.price}\n`;
+                const desc = a.description?.substring(0, 60) || "";
+                if (desc) productContext += `   ${desc}...\n`;
+              });
+            }
+
+            stageInstruction = `
+【當前階段】推薦產品（無完全符合）
+
+店內目前沒有完全符合所有條件的產品。請：
+1. 誠實告知：「目前店內沒有完全符合所有條件的款式」
+2. 推薦上方列出的「店內相近商品」（說明哪些條件相符，哪些稍有不同）
+3. 詢問顧客是否願意調整某個條件（如放寬價格、酸度範圍等）
+
+⚠️ 絕對不要推薦其他品牌或店外產品
+⚠️ 只推薦上方列出的店內實際商品
 `;
           }
         } catch (searchErr) {
@@ -385,7 +418,13 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
     // System Prompt
     const systemPrompt: GeminiMessage = {
       role: "system",
-      content: `你是專業咖啡助手，採用多輪對話方式協助顧客找到合適的咖啡豆。
+      content:
+        `你是我們咖啡店的專業咖啡顧問，協助顧客從「店內現有商品」中找到合適的咖啡豆。
+
+【重要限制】
+⚠️ 只能推薦店內實際販售的產品（會在對話中提供）
+⚠️ 絕不推薦其他品牌或店外產品
+⚠️ 如果店內沒有符合的商品，引導顧客調整需求或推薦相近的店內替代品
 
 【核心原則】
 - 循序漸進：先問風味偏好 → 再問細節 → 最後推薦
