@@ -10,6 +10,7 @@ import {
   randomMusicHandler,
   musicHealthCheck,
 } from "@/controllers/flavorMusicController";
+import { calculateQuizHandler } from "@/controllers/quizController";
 
 const router = Router();
 
@@ -25,9 +26,10 @@ router.post("/music/random", randomMusicHandler); // 取得隨機音樂推薦
 router.get("/music/health", musicHealthCheck); // 音樂系統健康檢查
 
 // === 其他 API ===
-router.get("/questions", questionHandler); // Coffee ID 測驗
+router.get("/questions", questionHandler); // Coffee ID 測驗題目
 router.get("/products", productHandler); // 產品列表
 router.get("/products-detail", productDetailHandler); // 產品詳細資訊
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
+router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 
 export default router;
