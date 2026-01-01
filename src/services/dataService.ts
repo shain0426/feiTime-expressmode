@@ -86,6 +86,10 @@ export const fetchStrapiData = async (
       });
     }
 
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = `${strapiClient.defaults.baseURL}/api/${collectionName}?${queryString}`;
+    console.log("🔍 FULL REQUEST URL:", fullUrl);
+
     const res = await strapiClient.get(`/api/${collectionName}`, { params });
 
     console.log("🚀 Strapi API URL:", res.request?.responseURL);
