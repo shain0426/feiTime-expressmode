@@ -22,6 +22,7 @@ interface UserPreferences {
   roast?: "Light" | "Medium" | "Dark";
   origin?: string;
   specificName?: string; // 指定品種/品名
+  specialSort?: "most_expensive" | "cheapest" | "most_popular"; // 特殊排序需求
 }
 
 /**
@@ -46,7 +47,14 @@ async function searchCoffeeForAssistant(query: {
   }
 
   if (query.category && !query.searchName) {
-    filters.flavor_type = { $eq: query.category };
+    // 使用 flavor_type 篩選（字串欄位，首字母大寫）
+    const categoryMap: Record<string, string> = {
+      fruity: "Fruity",
+      floral: "Floral",
+      nutty: "Nutty",
+      bold: "Bold",
+    };
+    filters.flavor_type = { $eq: categoryMap[query.category] };
   }
 
   if (query.minAcidity !== undefined || query.maxAcidity !== undefined) {
@@ -77,20 +85,6 @@ async function searchCoffeeForAssistant(query: {
     {
       filters,
       sort: [query.sortBy || "price:desc"],
-      fields: [
-        "id",
-        "name",
-        "origin",
-        "roast",
-        "processing",
-        "flavor_type",
-        "acidity",
-        "sweetness",
-        "body",
-        "price",
-        "description",
-        "variety",
-      ],
     }
   );
 
@@ -202,6 +196,30 @@ function extractPreferencesFromHistory(
     }
   }
 
+  // 提取特殊排序需求
+  if (
+    allText.includes("最貴") ||
+    allText.includes("價格最高") ||
+    allText.includes("最高級") ||
+    allText.includes("最頂級")
+  ) {
+    prefs.specialSort = "most_expensive";
+  } else if (
+    allText.includes("最便宜") ||
+    allText.includes("價格最低") ||
+    allText.includes("最平價") ||
+    allText.includes("最實惠")
+  ) {
+    prefs.specialSort = "cheapest";
+  } else if (
+    allText.includes("最受歡迎") ||
+    allText.includes("最熱門") ||
+    allText.includes("人氣最高") ||
+    allText.includes("賣最好")
+  ) {
+    prefs.specialSort = "most_popular";
+  }
+
   return prefs;
 }
 
@@ -214,6 +232,11 @@ function determineConversationStage(
   prefs: UserPreferences
 ): ConversationStage {
   const lowerQuestion = question.toLowerCase();
+
+  // 如果有特殊排序需求（最貴、最便宜、最受歡迎），直接進入推薦階段
+  if (prefs.specialSort) {
+    return ConversationStage.READY_TO_RECOMMEND;
+  }
 
   // 如果用戶明確指定特定品種或提供完整需求，直接進入推薦階段
   if (
@@ -237,6 +260,23 @@ function determineConversationStage(
  */
 function buildSearchQuery(prefs: UserPreferences): any {
   const query: any = { limit: 5 };
+
+  // 處理特殊排序需求
+  if (prefs.specialSort) {
+    if (prefs.specialSort === "most_expensive") {
+      query.sortBy = "price:desc";
+      query.limit = 5;
+      return query;
+    } else if (prefs.specialSort === "cheapest") {
+      query.sortBy = "price:asc";
+      query.limit = 5;
+      return query;
+    } else if (prefs.specialSort === "most_popular") {
+      query.sortBy = "popularity:desc";
+      query.limit = 5;
+      return query;
+    }
+  }
 
   if (prefs.specificName) {
     query.searchName = prefs.specificName;
@@ -344,26 +384,84 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
             productContext = `\n\n【店內符合商品: ${products.length}款】\n`;
             products.forEach((p: any, i: number) => {
               const a = p.attributes || p;
+              const flavorTags = Array.isArray(a.flavor_tags)
+                ? a.flavor_tags.join(", ")
+                : a.flavor_tags || "";
               productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
                 a.roast
-              } | ${a.flavor_type}\n`;
+              } | ${flavorTags}\n`;
               productContext += `   酸度${a.acidity} 甜度${a.sweetness} 醇厚${a.body} | $${a.price}\n`;
               const desc = a.description?.substring(0, 60) || "";
               if (desc) productContext += `   ${desc}...\n`;
             });
 
-            stageInstruction = `
+            // 根據特殊排序需求調整推薦話術
+            let recommendInstruction = "";
+            if (prefs.specialSort === "most_expensive") {
+              recommendInstruction = `
+【當前階段】推薦最貴的產品
+
+顧客詢問店內最貴的咖啡，上方已列出價格最高的前5款產品。
+
+推薦話術：⚠️ 必須標註價格
+- 直接介紹這些高級精品豆
+- 必須標註價格：「售價 $XXX」或「NT$ XXX」
+- 強調每款的獨特性與稀有性
+- 說明價格反映的品質（如：稀有品種、特殊處理法、得獎豆）
+- 用 <strong>產品名稱</strong> 標示
+- 簡單列舉即可，不需要全部詳細說明（可以說「還有...等」）
+
+範例：「我們店內最頂級的是 <strong>巴拿馬藝伎</strong>，售價 $1,280，這是世界知名的稀有品種，帶有獨特的花香與柑橘風味 ✨」
+`;
+            } else if (prefs.specialSort === "cheapest") {
+              recommendInstruction = `
+【當前階段】推薦最實惠的產品
+
+顧客詢問店內最便宜/平價的咖啡，上方已列出價格最實惠的前5款產品。
+
+推薦話術：⚠️ 必須標註價格
+- 必須標註價格：「售價 $XXX」或「只要 NT$ XXX」
+- 強調「CP值高」、「經濟實惠」但品質依然很好
+- 說明適合日常飲用或新手入門
+- 用 <strong>產品名稱</strong> 標示
+
+範例：「推薦您試試 <strong>巴西 日曬</strong>，只要 $380，CP值非常高！帶有巧克力與堅果的香氣，適合日常飲用 ☕」
+`;
+            } else if (prefs.specialSort === "most_popular") {
+              recommendInstruction = `
+【當前階段】推薦最受歡迎的產品
+
+顧客詢問店內最熱門的咖啡，上方已列出人氣最高的前5款產品。
+
+推薦話術：⚠️ 必須標註價格
+- 必須標註價格：「售價 $XXX」或「NT$ XXX」
+- 強調「顧客回購率高」、「長期暢銷」
+- 說明為什麼受歡迎（好上手、風味平衡、萬人迷等）
+- 用 <strong>產品名稱</strong> 標示
+
+範例：「最受歡迎的是 <strong>衣索比亞 水洗</strong>，售價 $580，這是我們的長期暢銷款，有著柑橘與花香的風味，非常好上手 🌸」
+`;
+            } else {
+              recommendInstruction = `
 【當前階段】推薦產品
 
 根據顧客偏好（${JSON.stringify(
-              prefs
-            )}），從上方「店內商品」中推薦2-3款最適合的產品。
+                prefs
+              )}），從上方「店內商品」中推薦2-3款最適合的產品。
 
-推薦格式：
+推薦格式：⚠️ 必須包含價格
 - 使用 <strong>產品名稱</strong> 標示
 - 說明為什麼適合（連結到顧客提到的偏好）
-- 標註價格和關鍵風味特點
+- 必須標註價格：「售價 $XXX」或「NT$ XXX」
+- 提及關鍵風味特點
 - 用親切的語氣，像是在咖啡店推薦豆子給朋友
+
+範例：「推薦您試試 <strong>哥倫比亞 厭氧</strong>，售價 $760，這款豆子有著莓果與葡萄酒般的香氣，非常適合喜歡果酸調的您 🍒」
+`;
+            }
+
+            stageInstruction = `
+${recommendInstruction}
 
 ⚠️ 只推薦上方列出的店內實際販售商品
 ⚠️ 絕不提及其他品牌或店外產品
@@ -387,9 +485,12 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
               productContext = `\n\n【店內相近商品: ${alternativeProducts.length}款】\n`;
               alternativeProducts.slice(0, 3).forEach((p: any, i: number) => {
                 const a = p.attributes || p;
+                const flavorTags = Array.isArray(a.flavor_tags)
+                  ? a.flavor_tags.join(", ")
+                  : a.flavor_tags || "";
                 productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
                   a.roast
-                } | ${a.flavor_type}\n`;
+                } | ${flavorTags}\n`;
                 productContext += `   酸度${a.acidity} 甜度${a.sweetness} 醇厚${a.body} | $${a.price}\n`;
                 const desc = a.description?.substring(0, 60) || "";
                 if (desc) productContext += `   ${desc}...\n`;
@@ -402,10 +503,14 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
 店內目前沒有完全符合所有條件的產品。請：
 1. 誠實告知：「目前店內沒有完全符合所有條件的款式」
 2. 推薦上方列出的「店內相近商品」（說明哪些條件相符，哪些稍有不同）
-3. 詢問顧客是否願意調整某個條件（如放寬價格、酸度範圍等）
+3. 必須標註價格：「售價 $XXX」或「NT$ XXX」
+4. 詢問顧客是否願意調整某個條件（如放寬價格、酸度範圍等）
 
 ⚠️ 絕對不要推薦其他品牌或店外產品
 ⚠️ 只推薦上方列出的店內實際商品
+⚠️ 推薦時必須包含價格資訊
+
+範例：「雖然沒有完全符合的，但 <strong>XX豆</strong>（售價 $XXX）很接近您的需求，只是酸度稍微高一點點...」
 `;
           }
         } catch (searchErr) {
@@ -418,13 +523,17 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
     // System Prompt
     const systemPrompt: GeminiMessage = {
       role: "system",
-      content:
-        `你是我們咖啡店的專業咖啡顧問，協助顧客從「店內現有商品」中找到合適的咖啡豆。
+      content: `你是我們咖啡店的專業咖啡顧問，協助顧客挑選合適的咖啡豆。
+
+【重要說明】
+✅ 我們的產品資料庫會自動提供符合條件的咖啡豆清單
+✅ 你只需要從提供的清單中挑選最適合顧客的產品
+✅ 產品資訊會以「【店內符合商品】」或「【店內相近商品】」的形式出現在對話中
 
 【重要限制】
-⚠️ 只能推薦店內實際販售的產品（會在對話中提供）
-⚠️ 絕不推薦其他品牌或店外產品
-⚠️ 如果店內沒有符合的商品，引導顧客調整需求或推薦相近的店內替代品
+⚠️ 只能推薦清單中列出的產品
+⚠️ 絕不推薦其他品牌或清單外的產品
+⚠️ 如果清單中沒有完全符合的商品，推薦相近的替代品並引導顧客調整需求
 
 【核心原則】
 - 循序漸進：先問風味偏好 → 再問細節 → 最後推薦
@@ -435,10 +544,20 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
 【風味分類】
 🌸 Floral-花香調 | 🍒 Fruity-果酸調 | 🥜 Nutty-堅果調 | 💪 Bold-濃郁調
 
-【回答格式】使用HTML格式：
-- <strong>粗體</strong>標示重點
-- <br>換行
-- emoji 增加親和力
+【回答格式規範】⚠️ 重要
+✅ 必須使用 HTML 格式回覆，範例：
+   - 粗體：<strong>產品名稱</strong>
+   - 換行：使用 <br> 標籤
+   - 列表：不使用 markdown 的 - 或 *，改用自然語氣描述
+
+❌ 禁止使用 Markdown 語法：
+   - 不要用 **粗體** 或 __粗體__
+   - 不要用 ## 標題
+   - 不要用 - 或 * 開頭的列表
+   - 不要用 \\n 換行
+
+回覆範例：
+「我推薦您試試 <strong>哥倫比亞 厭氧</strong>！這款豆子有著莓果與葡萄酒般的香氣，非常適合喜歡果酸調的您 🍒<br><br>另外也可以考慮 <strong>衣索比亞 日曬</strong>，帶有明亮的柑橘風味 ✨」
 
 ${stageInstruction}
 `.trim(),
