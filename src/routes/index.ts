@@ -2,7 +2,10 @@ import { Router } from "express";
 import { geminiHandler } from "@/controllers/geminiController";
 import { productHandler } from "@/controllers/productController";
 import { questionHandler } from "@/controllers/questionController";
-import { productDetailHandler } from "@/controllers/productDetailController";
+import {
+  productDetailHandler,
+  singleProductHandler,
+} from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
@@ -28,6 +31,7 @@ router.get("/music/health", musicHealthCheck); // 音樂系統健康檢查
 router.get("/questions", questionHandler); // Coffee ID 測驗
 router.get("/products", productHandler); // 產品列表
 router.get("/product-detail", productDetailHandler); // 產品詳細資訊
+router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細資訊
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 
 export default router;

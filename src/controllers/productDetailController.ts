@@ -64,3 +64,41 @@ export async function productDetailHandler(req: Request, res: Response) {
     });
   }
 }
+
+export async function singleProductHandler(req: Request, res: Response) {
+  try {
+    const { pid } = req.params; // 從 URL 參數取得 pid
+
+    const data = await fetchStrapiData("products", "*", 1, 1, {
+      fields: [
+        "name",
+        "pid",
+        "price",
+        "origin",
+        "processing",
+        "roast",
+        "stock",
+        "flavor_type",
+        "description",
+      ],
+      filters: {
+        pid: { $eq: pid }, // 根據 pid 篩選
+      },
+    });
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        error: "找不到此商品",
+      });
+    }
+
+    res.json({
+      data: data[0], // 回傳單筆資料
+    });
+  } catch (error: any) {
+    console.error("[singleProductHandler error]", error);
+    res.status(500).json({
+      error: "取得商品失敗",
+    });
+  }
+}
