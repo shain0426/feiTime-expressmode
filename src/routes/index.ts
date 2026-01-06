@@ -5,6 +5,7 @@ import { questionHandler } from "@/controllers/questionController";
 import {
   productDetailHandler,
   singleProductHandler,
+  recommendProductsHandler,
 } from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
@@ -33,6 +34,7 @@ router.get("/questions", questionHandler); // Coffee ID 測驗題目
 router.get("/products", productHandler); // 產品列表
 router.get("/product-detail", productDetailHandler); // 產品詳細資訊
 router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細資訊
+router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 
