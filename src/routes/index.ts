@@ -15,7 +15,8 @@ import {
   musicHealthCheck,
 } from "@/controllers/flavorMusicController";
 import { calculateQuizHandler } from "@/controllers/quizController";
-
+import { register, resendEmail } from "@/controllers/authController";
+import { registerLimiter, resendLimiter } from "@/middlewares/rateLimiters";
 const router = Router();
 
 // 所有API都放在這裡管理
@@ -37,5 +38,9 @@ router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細�
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
+
+// === 註冊相關 ===
+router.post("/auth/local/register", registerLimiter, register);
+router.post("/auth/local/send-email-confirmation", resendLimiter, resendEmail);
 
 export default router;
