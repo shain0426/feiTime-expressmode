@@ -6,19 +6,6 @@ export async function productDetailHandler(req: Request, res: Response) {
     // 解析分頁參數，給預設值
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 100;
-    const {
-      name,
-      pid,
-      price,
-      origin,
-      processing,
-      roast,
-      stock,
-      flavor_type,
-      flavor_tags,
-      description,
-      img,
-    } = req.query;
 
     // 呼叫公版函式取得資料
     // const data = await fetchStrapiData("products", "*", page, pageSize);
@@ -33,6 +20,7 @@ export async function productDetailHandler(req: Request, res: Response) {
     const data = await fetchStrapiData("products", "*", 1, 100, {
       fields: [
         "name",
+        "english_name",
         "pid",
         "price",
         "origin",
@@ -41,6 +29,7 @@ export async function productDetailHandler(req: Request, res: Response) {
         "stock",
         "flavor_type",
         "description",
+        "weight",
       ],
     });
 
@@ -71,6 +60,7 @@ export async function singleProductHandler(req: Request, res: Response) {
     const data = await fetchStrapiData("products", "*", 1, 1, {
       fields: [
         "name",
+        "english_name",
         "pid",
         "price",
         "origin",
@@ -79,6 +69,7 @@ export async function singleProductHandler(req: Request, res: Response) {
         "stock",
         "flavor_type",
         "description",
+        "weight",
       ],
       filters: {
         pid: { $eq: pid }, // 根據 pid 篩選
