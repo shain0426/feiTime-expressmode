@@ -17,6 +17,7 @@ import {
 import { calculateQuizHandler } from "@/controllers/quizController";
 import { register, resendEmail } from "@/controllers/authController";
 import { registerLimiter, resendLimiter } from "@/middlewares/rateLimiters";
+import { loginController } from "../controllers/loginController";
 const router = Router();
 
 // 所有API都放在這裡管理
@@ -42,5 +43,8 @@ router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 // === 註冊相關 ===
 router.post("/auth/local/register", registerLimiter, register);
 router.post("/auth/local/send-email-confirmation", resendLimiter, resendEmail);
+
+// === 登入相關 ===
+router.post("/login", loginController);
 
 export default router;

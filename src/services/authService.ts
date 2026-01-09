@@ -1,4 +1,5 @@
 import axios from "axios";
+import { AuthResponse } from "@/types/auth";
 
 const STRAPI_URL = process.env.STRAPI_URL;
 
@@ -20,4 +21,17 @@ export const sendConfirmationEmail = async (email: string) => {
     { email }
   );
   return response.data;
+};
+
+export const authService = {
+  async loginWithStrapi(
+    identifier: string,
+    password: string
+  ): Promise<AuthResponse> {
+    const response = await axios.post(`${STRAPI_URL}/api/auth/local`, {
+      identifier,
+      password,
+    });
+    return response.data;
+  },
 };
