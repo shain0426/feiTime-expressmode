@@ -1,17 +1,25 @@
 import rateLimit from "express-rate-limit";
 
-export const registerLimiter = rateLimit({
+export const strictAccountLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  message: { error: { message: "註冊次數過多，請稍後再試" } },
+  message: { error: { message: "操作次數過多，請一小時後再試" } },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-export const resendLimiter = rateLimit({
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: { message: "操作次數過多，請一小時後再試" } },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const emailActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
-  message: { error: { message: "請求驗證信頻率過高，請稍後再試" } },
+  message: { error: { message: "郵件請求頻率過高，請檢查信箱或稍後再試" } },
   standardHeaders: true,
   legacyHeaders: false,
 });
