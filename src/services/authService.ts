@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AuthResponse } from "@/types/auth";
+import { AuthResponse, RegisterInput, ResetPasswordInput } from "@/types/auth";
 
 const STRAPI_URL = process.env.STRAPI_URL;
 
@@ -8,7 +8,7 @@ const strapiClient = axios.create({
 });
 
 export const authService = {
-  async registerUser(userData: any): Promise<AuthResponse> {
+  async registerUser(userData: RegisterInput): Promise<AuthResponse> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/local/register`,
       userData
@@ -41,7 +41,7 @@ export const authService = {
     });
   },
 
-  async requestStrapiResetPassword(body: any): Promise<void> {
+  async requestStrapiResetPassword(body: ResetPasswordInput): Promise<void> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/reset-password`,
       body
