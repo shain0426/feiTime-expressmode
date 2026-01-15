@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { geminiHandler } from "@/controllers/geminiController";
+// import { geminiHandler } from "@/controllers/geminiController";
 import { productHandler } from "@/controllers/productController";
 import { questionHandler } from "@/controllers/questionController";
 import {
@@ -31,7 +31,7 @@ const router = Router();
 // 所有API都放在這裡管理
 
 // === Gemini AI 相關 ===
-router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
+// router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 
 // === 首頁-風味音樂推薦系統 ===
@@ -48,6 +48,7 @@ router.get("/product-detail/:pid/recommendations", recommendProductsHandler); //
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
+
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
 router.post(
@@ -72,4 +73,5 @@ router.get(
   "/auth/google/callback",
   googleAuthController.handleGoogleCallback.bind(googleAuthController)
 );
+
 export default router;

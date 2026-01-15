@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import googleAuthController from "../controllers/googleAuthController";
+import googleAuthController from "@/controllers/googleAuthController";
 
 const router: Router = express.Router();
 

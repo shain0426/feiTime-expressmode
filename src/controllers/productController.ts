@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { fetchStrapiData } from "@/services/dataService";
+import { handleError } from "@/utils";
 
 export async function productHandler(req: Request, res: Response) {
   try {
@@ -52,9 +53,6 @@ export async function productHandler(req: Request, res: Response) {
 
     res.json(data);
   } catch (error) {
-    console.error("[productHandler error]", error);
-    res.status(500).json({
-      error: "取得 products 失敗",
-    });
+    return handleError(error, res, "取得 products 失敗");
   }
 }

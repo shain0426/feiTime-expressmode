@@ -1,16 +1,10 @@
 //公版
 import axios from "axios";
-// import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// const supabase = createClient(
-//   process.env.DATABASE_URL!,
-//   process.env.DATABASE_SERVICE_ROLE_KEY!
-// );
-
-const strapiClient = axios.create({
+export const strapiClient = axios.create({
   baseURL: process.env.STRAPI_URL,
   headers: {
     "Content-Type": "application/json",
@@ -50,7 +44,7 @@ export type StrapiFilters = Record<
 >;
 
 /**
- * 公版函式：取得 Strapi 資料
+ * 公版函式：取得 Strapi 資料 (GET)
  *
  * @param collectionName - Strapi collection 名稱，例如 "products"
  * @param populate - 是否展開關聯資料，預設 "*"
@@ -145,14 +139,91 @@ export const fetchStrapiData = async (
   }
 };
 
-// export const fetchSupabaseData = async (tableName: string, columns = "*") => {
-//   try {
-//     const { data, error } = await supabase.from(tableName).select(columns);
-//     if (error) throw error;
-//     return data;
-//   } catch (err) {
-//     const errorMessage =
-//       err instanceof Error ? err.message : "Supabase request failed";
-//     throw new Error(errorMessage);
-//   }
-// };
+/**
+ * 公版函式：新增 Strapi 資料 (POST)
+ *
+ * @param collectionName - Strapi collection 名稱，例如 "products"
+ * @param payload - 要新增的資料，例如 { data: { name: "咖啡豆", price: 500 } }
+ * @returns Strapi 回應資料
+ */
+export const createStrapiData = async (
+  collectionName: string,
+  payload: { data: Record<string, unknown> }
+) => {
+  try {
+    console.log(`📝 Creating data in ${collectionName}:`, payload);
+
+    const res = await strapiClient.post(`/api/${collectionName}`, payload);
+
+    console.log("✅ Create success:", res.status);
+    console.log("✅ Response data:", res.data);
+
+    return res.data;
+  } catch (err) {
+    const errorObj = err as { toJSON?: () => unknown; message?: string };
+    console.error("❌ Create error:", errorObj.toJSON?.() ?? err);
+
+    const errorMessage = errorObj.message || "Create request failed";
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * 公版函式：更新 Strapi 資料 (PUT)
+ *
+ * @param collectionName - Strapi collection 名稱，例如 "products"
+ * @param id - 要更新的資料 ID
+ * @param payload - 要更新的資料，例如 { data: { price: 600 } }
+ * @returns Strapi 回應資料
+ */
+export const updateStrapiData = async (
+  collectionName: string,
+  id: number | string,
+  payload: { data: Record<string, unknown> }
+) => {
+  try {
+    console.log(`✏️ Updating ${collectionName} #${id}:`, payload);
+
+    const res = await strapiClient.put(`/api/${collectionName}/${id}`, payload);
+
+    console.log("✅ Update success:", res.status);
+    console.log("✅ Response data:", res.data);
+
+    return res.data;
+  } catch (err) {
+    const errorObj = err as { toJSON?: () => unknown; message?: string };
+    console.error("❌ Update error:", errorObj.toJSON?.() ?? err);
+
+    const errorMessage = errorObj.message || "Update request failed";
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * 公版函式：刪除 Strapi 資料 (DELETE)
+ *
+ * @param collectionName - Strapi collection 名稱，例如 "products"
+ * @param id - 要刪除的資料 ID
+ * @returns Strapi 回應資料
+ */
+export const deleteStrapiData = async (
+  collectionName: string,
+  id: number | string
+) => {
+  try {
+    console.log(`🗑️ Deleting ${collectionName} #${id}`);
+
+    const res = await strapiClient.delete(`/api/${collectionName}/${id}`);
+
+    console.log("✅ Delete success:", res.status);
+    console.log("✅ Response data:", res.data);
+
+    return res.data;
+  } catch (err) {
+    const errorObj = err as { toJSON?: () => unknown; message?: string };
+    console.error("❌ Delete error:", errorObj.toJSON?.() ?? err);
+
+    const errorMessage = errorObj.message || "Delete request failed";
+    throw new Error(errorMessage);
+  }
+};

@@ -6,7 +6,10 @@ export async function geminiHandler(req: Request, res: Response) {
   try {
     const params = req.body as GeminiRequest;
     if (!params || typeof params !== "object") {
-      return res.status(400).json({ error: "params (JSON) is required" });
+      return res.status(400).json({
+        success: false,
+        error: { message: "params (JSON) is required" },
+      });
     }
 
     // system prompt 控制回覆規則
@@ -34,6 +37,8 @@ export async function geminiHandler(req: Request, res: Response) {
     res.json({ text });
   } catch (err) {
     console.error("Gemini API error:", err);
-    res.status(500).json({ error: "Gemini failed" });
+    res
+      .status(500)
+      .json({ success: false, error: { message: "Gemini failed" } });
   }
 }

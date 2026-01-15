@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { fetchStrapiData } from "@/services/dataService";
+import { handleError } from "@/utils";
 
 /**
  * Strapi 產品型別（可能有 attributes 包裝或直接是屬性）
@@ -18,10 +19,10 @@ interface ProductWithLabels extends StrapiProduct {
   isNew: boolean;
 }
 
-// /**
-//  * 隨機選擇 4 個產品顯示為精選產品（首頁熱門商品）
-//  * GET /api/featured/products
-//  *
+/**
+ * 隨機選擇 4 個產品顯示為精選產品（首頁熱門商品）
+ * GET /api/featured/products
+ */
 export async function featuredProductHandler(req: Request, res: Response) {
   try {
     const limit = 4;
@@ -62,9 +63,6 @@ export async function featuredProductHandler(req: Request, res: Response) {
 
     res.json(withLabels);
   } catch (error) {
-    console.error("[featuredProductHandler error]", error);
-    res.status(500).json({
-      error: "取得精選產品失敗",
-    });
+    return handleError(error, res, "取得精選產品失敗");
   }
 }

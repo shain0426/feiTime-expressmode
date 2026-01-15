@@ -45,8 +45,12 @@ class GoogleAuthController {
       );
 
       res.redirect(callbackUrl);
-    } catch (error: any) {
-      console.error("Google callback error:", error.message);
+    } catch (error) {
+      // 記錄錯誤詳情
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Google callback error:", errorMessage);
+
       const errorUrl = googleAuthService.buildFrontendErrorUrl("auth_failed");
       res.redirect(errorUrl);
     }
