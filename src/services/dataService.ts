@@ -145,14 +145,14 @@ export const fetchStrapiData = async (
   }
 };
 
-export const fetchSupabaseData = async (tableName: string, columns = "*") => {
-  try {
-    const { data, error } = await supabase.from(tableName).select(columns);
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "Supabase request failed";
-    throw new Error(errorMessage);
-  }
-};
+// export const fetchSupabaseData = async (tableName: string, columns = "*") => {
+//   try {
+//     const { data, error } = await supabase.from(tableName).select(columns);
+//     if (error) throw error;
+//     return data;
+//   } catch (err) {
+//     const errorMessage =
+//       err instanceof Error ? err.message : "Supabase request failed";
+//     throw new Error(errorMessage);
+//   }
+// };
