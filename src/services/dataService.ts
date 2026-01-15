@@ -104,6 +104,59 @@ export const fetchStrapiData = async (
   }
 };
 
+/**
+ * 公版函式：新增 Strapi 資料
+ */
+export const postStrapiData = async (collectionName: string, data: any) => {
+  try {
+    console.log("POST Headers:", strapiClient.defaults.headers);
+    const res = await strapiClient.post(`/api/${collectionName}`, { data });
+    return res.data?.data;
+  } catch (err: any) {
+    console.error("❌ Strapi POST error:", err.toJSON?.() ?? err);
+    // 確保錯誤往上拋時包含 response 資料 (讓 controller 可以抓到 details)
+    if (err.response) {
+      throw err;
+    }
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * 公版函式：更新 Strapi 資料
+ */
+export const putStrapiData = async (
+  collectionName: string,
+  documentId: string,
+  data: any
+) => {
+  try {
+    const res = await strapiClient.put(`/api/${collectionName}/${documentId}`, {
+      data,
+    });
+    return res.data?.data;
+  } catch (err: any) {
+    console.error("❌ Strapi PUT error:", err.toJSON?.() ?? err);
+    throw err;
+  }
+};
+
+/**
+ * 公版函式：刪除 Strapi 資料
+ */
+export const deleteStrapiData = async (
+  collectionName: string,
+  documentId: string
+) => {
+  try {
+    await strapiClient.delete(`/api/${collectionName}/${documentId}`);
+    return true;
+  } catch (err: any) {
+    console.error("❌ Strapi DELETE error:", err.toJSON?.() ?? err);
+    throw err;
+  }
+};
+
 export const fetchSupabaseData = async (tableName: string, columns = "*") => {
   try {
     const { data, error } = await supabase.from(tableName).select(columns);
