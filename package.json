@@ -1,6 +1,9 @@
 {
   "name": "feitime-expressmode",
   "version": "1.0.0",
+  "_moduleAliases": {
+    "@": "dist"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,6 +24,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "module-alias": "^2.2.3",
     "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
