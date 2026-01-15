@@ -24,6 +24,7 @@ import {
 import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
 import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
+import googleAuthController from "../controllers/googleAuthController";
 
 const router = Router();
 
@@ -66,5 +67,9 @@ router.post(
   "/auth/reset-password",
   emailActionLimiter,
   authController.resetPassword
+);
+router.get(
+  "/auth/google/callback",
+  googleAuthController.handleGoogleCallback.bind(googleAuthController)
 );
 export default router;
