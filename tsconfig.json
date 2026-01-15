@@ -7,10 +7,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": "src",
+    "baseUrl": ".", // 改為專案根目錄
     "paths": {
-      "@/*": ["*"]
-    }
+      "@/*": ["src/*"] // 明確指定 @ 指向 src
+    },
+    "moduleResolution": "node"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
