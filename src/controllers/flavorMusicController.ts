@@ -22,65 +22,12 @@ interface YouTubeVideo {
   embedUrl: string;
 }
 
-/**
- * 內部使用的影片型別（包含 viewCount 用於排序）
- */
-interface YouTubeVideoWithStats extends YouTubeVideo {
-  viewCount: number;
-}
-
 interface RecommendationResponse {
   success: boolean;
   flavor: string;
   recommendation: string;
   videos: YouTubeVideo[];
   message?: string;
-}
-
-/**
- * YouTube Search API 回應型別
- */
-interface YouTubeSearchItem {
-  id: {
-    videoId: string;
-  };
-  snippet: {
-    title: string;
-    channelTitle: string;
-    thumbnails: {
-      default?: { url: string };
-      high?: { url: string };
-    };
-  };
-}
-
-interface YouTubeSearchResponse {
-  items?: YouTubeSearchItem[];
-}
-
-/**
- * YouTube Videos API 回應型別
- */
-interface YouTubeVideoItem {
-  id: string;
-  snippet: {
-    title: string;
-    channelTitle: string;
-    thumbnails: {
-      default?: { url: string };
-      high?: { url: string };
-    };
-  };
-  statistics: {
-    viewCount?: string;
-  };
-  contentDetails: {
-    duration: string;
-  };
-}
-
-interface YouTubeVideosResponse {
-  items?: YouTubeVideoItem[];
 }
 
 /**
@@ -243,7 +190,7 @@ const parseDuration = (duration: string): number => {
 const searchYouTubeByKeyword = async (
   keyword: string,
   maxResults: number = 5
-): Promise<YouTubeVideoWithStats[]> => {
+): Promise<YouTubeVideo[]> => {
   try {
     if (!YOUTUBE_API_KEY) {
       throw new Error("YouTube API key is not configured");
@@ -251,48 +198,42 @@ const searchYouTubeByKeyword = async (
 
     console.log(`🔍 Searching: "${keyword}"`);
 
-    const searchResponse = await axios.get<YouTubeSearchResponse>(
-      YOUTUBE_SEARCH_URL,
-      {
-        params: {
-          part: "snippet",
-          q: keyword,
-          type: "video",
-          maxResults: maxResults * 2,
-          key: YOUTUBE_API_KEY,
-          videoCategoryId: "10",
-          order: "viewCount",
-          videoEmbeddable: "true",
-          safeSearch: "moderate",
-        },
-      }
-    );
+    const searchResponse = await axios.get(YOUTUBE_SEARCH_URL, {
+      params: {
+        part: "snippet",
+        q: keyword,
+        type: "video",
+        maxResults: maxResults * 2,
+        key: YOUTUBE_API_KEY,
+        videoCategoryId: "10",
+        order: "viewCount",
+        videoEmbeddable: "true",
+        safeSearch: "moderate",
+      },
+    });
 
     if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
       return [];
     }
 
     const videoIds = searchResponse.data.items
-      .map((item) => item.id.videoId)
+      .map((item: any) => item.id.videoId)
       .join(",");
 
-    const detailsResponse = await axios.get<YouTubeVideosResponse>(
-      YOUTUBE_VIDEOS_URL,
-      {
-        params: {
-          part: "snippet,statistics,contentDetails",
-          id: videoIds,
-          key: YOUTUBE_API_KEY,
-        },
-      }
-    );
+    const detailsResponse = await axios.get(YOUTUBE_VIDEOS_URL, {
+      params: {
+        part: "snippet,statistics,contentDetails",
+        id: videoIds,
+        key: YOUTUBE_API_KEY,
+      },
+    });
 
     if (!detailsResponse.data.items) {
       return [];
     }
 
     const filtered = detailsResponse.data.items
-      .filter((item) => {
+      .filter((item: any) => {
         const viewCount = parseInt(item.statistics.viewCount || "0", 10);
         const duration = parseDuration(item.contentDetails.duration);
 
@@ -301,14 +242,13 @@ const searchYouTubeByKeyword = async (
 
         return true;
       })
-      .map((item) => ({
+      .map((item: any) => ({
         videoId: item.id,
         title: item.snippet.title,
         channelTitle: item.snippet.channelTitle,
         thumbnail:
           item.snippet.thumbnails.high?.url ||
-          item.snippet.thumbnails.default?.url ||
-          "",
+          item.snippet.thumbnails.default?.url,
         embedUrl: `https://www.youtube.com/embed/${item.id}?autoplay=1&rel=0`,
         viewCount: parseInt(item.statistics.viewCount || "0", 10),
       }));
@@ -333,7 +273,7 @@ const searchMultipleKeywords = async (
     // 隨機打亂順序
     const shuffledSearches = [...searches].sort(() => 0.5 - Math.random());
 
-    const allVideos: YouTubeVideoWithStats[] = [];
+    const allVideos: YouTubeVideo[] = [];
 
     // 從每個關鍵字搜尋 1-2 個影片
     for (const search of shuffledSearches) {
@@ -379,7 +319,7 @@ export const flavorMusicHandler = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { flavorName, description } = req.body as FlavorRequest;
+    const { flavorId, flavorName, description } = req.body as FlavorRequest;
 
     if (!flavorName) {
       res.status(400).json({
