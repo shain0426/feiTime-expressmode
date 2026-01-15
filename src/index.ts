@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import routes from "./routes/index";
+import googleAuthRouter from "./routes/googleAuth";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; //允許自簽憑證，但正式上線要拿掉！！！
 
@@ -13,7 +14,14 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 //允許前端跨域請求
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 //解析 JSON request body
 app.use(express.json());
@@ -23,6 +31,9 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 //掛載集中管理的 route
 app.use("/api", routes);
+
+// google 註冊的route
+app.use("/api", googleAuthRouter);
 
 //啟動 server
 app.listen(PORT, () => {
