@@ -7,11 +7,13 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": ".", // 改為專案根目錄
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"] // 明確指定 @ 指向 src
+      "@/*": ["src/*"]
     },
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "typeRoots": ["./node_modules/@types"], // 新增這行
+    "types": ["node", "express", "cors"] // 新增這行
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
