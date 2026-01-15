@@ -7,8 +7,26 @@ const strapiClient = axios.create({
   baseURL: STRAPI_URL,
 });
 
+/**
+ * 註冊用戶資料型別
+ */
+interface RegisterUserData {
+  username: string;
+  email: string;
+  password: string;
+}
+
+/**
+ * 重設密碼請求資料型別
+ */
+interface ResetPasswordData {
+  code: string;
+  password: string;
+  passwordConfirmation: string;
+}
+
 export const authService = {
-  async registerUser(userData: any): Promise<AuthResponse> {
+  async registerUser(userData: RegisterUserData): Promise<AuthResponse> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/local/register`,
       userData
@@ -41,7 +59,7 @@ export const authService = {
     });
   },
 
-  async requestStrapiResetPassword(body: any): Promise<void> {
+  async requestStrapiResetPassword(body: ResetPasswordData): Promise<void> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/reset-password`,
       body

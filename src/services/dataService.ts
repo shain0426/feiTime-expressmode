@@ -19,6 +19,34 @@ const strapiClient = axios.create({
 });
 
 /**
+ * Strapi 篩選運算子型別
+ */
+interface StrapiFilterOperator {
+  $eq?: string | number;
+  $ne?: string | number;
+  $lt?: number;
+  $lte?: number;
+  $gt?: number;
+  $gte?: number;
+  $in?: (string | number)[];
+  $notIn?: (string | number)[];
+  $contains?: string;
+  $notContains?: string;
+  $containsi?: string;
+  $notContainsi?: string;
+  $null?: boolean;
+  $notNull?: boolean;
+  $between?: [number, number];
+  $startsWith?: string;
+  $endsWith?: string;
+}
+
+/**
+ * Strapi 篩選條件型別
+ */
+type StrapiFilters = Record<string, StrapiFilterOperator | string | number>;
+
+/**
  * 公版函式：取得 Strapi 資料
  *
  * @param collectionName - Strapi collection 名稱，例如 "products"
@@ -37,13 +65,13 @@ export const fetchStrapiData = async (
   pageSize = 100,
   options?: {
     fields?: string[];
-    filters?: Record<string, any>;
+    filters?: StrapiFilters;
     sort?: string[];
   }
 ) => {
   try {
     // 初始化 params，放基本的分頁與 populate 設定
-    const params: Record<string, any> = {
+    const params: Record<string, string | number> = {
       populate,
       "pagination[page]": page,
       "pagination[pageSize]": pageSize,
@@ -66,12 +94,17 @@ export const fetchStrapiData = async (
     if (options?.filters) {
       Object.keys(options.filters).forEach((key) => {
         const value = options.filters![key];
-        if (typeof value === "object") {
+        if (typeof value === "object" && value !== null) {
           Object.keys(value).forEach((op) => {
-            params[`filters[${key}][${op}]`] = value[op];
+            const opValue = value[op as keyof typeof value];
+            if (opValue !== undefined) {
+              params[`filters[${key}][${op}]`] = Array.isArray(opValue)
+                ? opValue.join(",")
+                : String(opValue);
+            }
           });
         } else {
-          params[`filters[${key}]`] = value;
+          params[`filters[${key}]`] = String(value);
         }
       });
     }
@@ -86,7 +119,9 @@ export const fetchStrapiData = async (
       });
     }
 
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = new URLSearchParams(
+      Object.entries(params).map(([key, value]) => [key, String(value)])
+    ).toString();
     const fullUrl = `${strapiClient.defaults.baseURL}/api/${collectionName}?${queryString}`;
     console.log("🔍 FULL REQUEST URL:", fullUrl);
 
@@ -98,9 +133,12 @@ export const fetchStrapiData = async (
 
     // 直接回傳 data 層
     return res.data?.data ?? [];
-  } catch (err: any) {
-    console.error("❌ Strapi error full:", err.toJSON?.() ?? err);
-    throw new Error(err.message);
+  } catch (err) {
+    const errorObj = err as { toJSON?: () => unknown; message?: string };
+    console.error("❌ Strapi error full:", errorObj.toJSON?.() ?? err);
+
+    const errorMessage = errorObj.message || "Strapi request failed";
+    throw new Error(errorMessage);
   }
 };
 
@@ -109,7 +147,9 @@ export const fetchSupabaseData = async (tableName: string, columns = "*") => {
     const { data, error } = await supabase.from(tableName).select(columns);
     if (error) throw error;
     return data;
-  } catch (err: any) {
-    throw new Error(err.message);
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Supabase request failed";
+    throw new Error(errorMessage);
   }
 };

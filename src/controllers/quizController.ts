@@ -29,11 +29,15 @@ export async function calculateQuizHandler(req: Request, res: Response) {
         normalizedScores,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[calculateQuizHandler error]", error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "計算測驗結果失敗";
+
     res.status(500).json({
       error: "計算測驗結果失敗",
-      message: error.message,
+      message: errorMessage,
     });
   }
 }

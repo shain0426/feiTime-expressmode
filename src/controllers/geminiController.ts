@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { geminiText } from "@/services/geminiClient";
-import { GeminiMessage, GeminiRequest, GeminiResponse } from "@/types/gemini";
+import { GeminiMessage, GeminiRequest } from "@/types/gemini";
 
 export async function geminiHandler(req: Request, res: Response) {
   try {

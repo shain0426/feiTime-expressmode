@@ -21,7 +21,7 @@ export async function productHandler(req: Request, res: Response) {
 
     // 原樣回傳給前端
     res.json(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[productHandler error]", error);
 
     res.status(500).json({

@@ -26,9 +26,56 @@ interface UserPreferences {
 }
 
 /**
- * 內部函數：根據用戶需求搜尋咖啡豆
+ * Strapi 產品屬性型別
  */
-async function searchCoffeeForAssistant(query: {
+interface ProductAttributes {
+  name: string;
+  origin: string;
+  roast: string;
+  flavor_tags: string[] | string;
+  acidity: number;
+  sweetness: number;
+  body: number;
+  price: number;
+  description?: string;
+  flavor_type?: string;
+}
+
+/**
+ * Strapi 產品型別（可能有 attributes 包裝或直接是屬性）
+ */
+interface StrapiProduct {
+  id?: number;
+  attributes?: ProductAttributes;
+  // 直接屬性（向後相容）
+  name?: string;
+  origin?: string;
+  roast?: string;
+  flavor_tags?: string[] | string;
+  acidity?: number;
+  sweetness?: number;
+  body?: number;
+  price?: number;
+  description?: string;
+  flavor_type?: string;
+}
+
+/**
+ * Strapi 查詢 filters 型別
+ */
+interface StrapiFilters {
+  name?: { $containsi: string };
+  flavor_type?: { $eq: string };
+  acidity?: { $gte?: number; $lte?: number };
+  price?: { $gte?: number; $lte?: number };
+  origin?: { $eq: string };
+  roast?: { $eq: string };
+}
+
+/**
+ * 搜尋查詢參數型別
+ */
+interface SearchQuery {
   category?: "fruity" | "floral" | "nutty" | "bold";
   minAcidity?: number;
   maxAcidity?: number;
@@ -39,8 +86,15 @@ async function searchCoffeeForAssistant(query: {
   limit?: number;
   searchName?: string;
   sortBy?: string;
-}) {
-  const filters: Record<string, any> = {};
+}
+
+/**
+ * 內部函數：根據用戶需求搜尋咖啡豆
+ */
+async function searchCoffeeForAssistant(
+  query: SearchQuery
+): Promise<StrapiProduct[]> {
+  const filters: StrapiFilters = {};
 
   if (query.searchName) {
     filters.name = { $containsi: query.searchName };
@@ -246,7 +300,7 @@ function determineConversationStage(
     return ConversationStage.READY_TO_RECOMMEND;
   }
 
-  // 如果已經選擇風味分類，進入細節詢問階段
+  // 如果已經選擇風味分類,進入細節詢問階段
   if (prefs.flavorCategory) {
     return ConversationStage.FLAVOR_SELECTED;
   }
@@ -258,8 +312,8 @@ function determineConversationStage(
 /**
  * 建構查詢參數
  */
-function buildSearchQuery(prefs: UserPreferences): any {
-  const query: any = { limit: 5 };
+function buildSearchQuery(prefs: UserPreferences): SearchQuery {
+  const query: SearchQuery = { limit: 5 };
 
   // 處理特殊排序需求
   if (prefs.specialSort) {
@@ -316,6 +370,28 @@ function buildSearchQuery(prefs: UserPreferences): any {
   }
 
   return query;
+}
+
+/**
+ * 格式化產品資訊
+ */
+function formatProductInfo(product: StrapiProduct, index: number): string {
+  // 處理可能有 attributes 包裝或直接是屬性的情況
+  const attrs = product.attributes || product;
+
+  const flavorTags = Array.isArray(attrs.flavor_tags)
+    ? attrs.flavor_tags.join(", ")
+    : attrs.flavor_tags || "";
+
+  let info = `${index + 1}. ${attrs.name} | ${attrs.origin} | ${
+    attrs.roast
+  } | ${flavorTags}\n`;
+  info += `   酸度${attrs.acidity} 甜度${attrs.sweetness} 醇厚${attrs.body} | $${attrs.price}\n`;
+
+  const desc = attrs.description?.substring(0, 60) || "";
+  if (desc) info += `   ${desc}...\n`;
+
+  return info;
 }
 
 export async function coffeeAssistantHandler(req: Request, res: Response) {
@@ -382,17 +458,8 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
 
           if (products && products.length > 0) {
             productContext = `\n\n【店內符合商品: ${products.length}款】\n`;
-            products.forEach((p: any, i: number) => {
-              const a = p.attributes || p;
-              const flavorTags = Array.isArray(a.flavor_tags)
-                ? a.flavor_tags.join(", ")
-                : a.flavor_tags || "";
-              productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
-                a.roast
-              } | ${flavorTags}\n`;
-              productContext += `   酸度${a.acidity} 甜度${a.sweetness} 醇厚${a.body} | $${a.price}\n`;
-              const desc = a.description?.substring(0, 60) || "";
-              if (desc) productContext += `   ${desc}...\n`;
+            products.forEach((product, index) => {
+              productContext += formatProductInfo(product, index);
             });
 
             // 根據特殊排序需求調整推薦話術
@@ -470,7 +537,7 @@ ${recommendInstruction}
 `;
           } else {
             // 嘗試放寬條件查詢相近產品
-            const relaxedQuery = { ...searchQuery };
+            const relaxedQuery: SearchQuery = { ...searchQuery };
             delete relaxedQuery.minAcidity;
             delete relaxedQuery.maxAcidity;
             if (relaxedQuery.maxPrice) {
@@ -483,17 +550,8 @@ ${recommendInstruction}
 
             if (alternativeProducts && alternativeProducts.length > 0) {
               productContext = `\n\n【店內相近商品: ${alternativeProducts.length}款】\n`;
-              alternativeProducts.slice(0, 3).forEach((p: any, i: number) => {
-                const a = p.attributes || p;
-                const flavorTags = Array.isArray(a.flavor_tags)
-                  ? a.flavor_tags.join(", ")
-                  : a.flavor_tags || "";
-                productContext += `${i + 1}. ${a.name} | ${a.origin} | ${
-                  a.roast
-                } | ${flavorTags}\n`;
-                productContext += `   酸度${a.acidity} 甜度${a.sweetness} 醇厚${a.body} | $${a.price}\n`;
-                const desc = a.description?.substring(0, 60) || "";
-                if (desc) productContext += `   ${desc}...\n`;
+              alternativeProducts.slice(0, 3).forEach((product, index) => {
+                productContext += formatProductInfo(product, index);
               });
             }
 

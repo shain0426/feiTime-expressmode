@@ -1,6 +1,23 @@
 import { Request, Response } from "express";
 import { fetchStrapiData } from "@/services/dataService";
 
+/**
+ * Strapi 產品型別（可能有 attributes 包裝或直接是屬性）
+ */
+interface StrapiProduct {
+  id?: number;
+  attributes?: Record<string, unknown>;
+  [key: string]: unknown; // 其他動態屬性
+}
+
+/**
+ * 帶標籤的產品型別
+ */
+interface ProductWithLabels extends StrapiProduct {
+  isPopular: boolean;
+  isNew: boolean;
+}
+
 // /**
 //  * 隨機選擇 4 個產品顯示為精選產品（首頁熱門商品）
 //  * GET /api/featured/products
@@ -9,7 +26,12 @@ export async function featuredProductHandler(req: Request, res: Response) {
   try {
     const limit = 4;
 
-    const allProducts = await fetchStrapiData("products", "img", 1, 100);
+    const allProducts: StrapiProduct[] = await fetchStrapiData(
+      "products",
+      "img",
+      1,
+      100
+    );
 
     console.log("📦 取得產品總數:", allProducts.length);
     if (allProducts.length > 0) {
@@ -20,7 +42,7 @@ export async function featuredProductHandler(req: Request, res: Response) {
     }
 
     // 隨機選擇 4 個產品（Fisher-Yates 部分洗牌）
-    const selected = [];
+    const selected: StrapiProduct[] = [];
     const pool = [...allProducts];
 
     for (let i = 0; i < Math.min(limit, pool.length); i++) {
@@ -30,7 +52,7 @@ export async function featuredProductHandler(req: Request, res: Response) {
     }
 
     // 自動添加標籤
-    const withLabels = selected.map((product: any, index: number) => ({
+    const withLabels: ProductWithLabels[] = selected.map((product, index) => ({
       ...product,
       isPopular: index === 0,
       isNew: index === 3,
@@ -39,7 +61,7 @@ export async function featuredProductHandler(req: Request, res: Response) {
     console.log(`✅ 取得 ${withLabels.length} 個精選產品`);
 
     res.json(withLabels);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[featuredProductHandler error]", error);
     res.status(500).json({
       error: "取得精選產品失敗",
