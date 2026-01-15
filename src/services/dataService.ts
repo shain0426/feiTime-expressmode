@@ -21,7 +21,7 @@ const strapiClient = axios.create({
 /**
  * Strapi 篩選運算子型別
  */
-interface StrapiFilterOperator {
+export interface StrapiFilterOperator {
   $eq?: string | number;
   $ne?: string | number;
   $lt?: number;
@@ -44,7 +44,10 @@ interface StrapiFilterOperator {
 /**
  * Strapi 篩選條件型別
  */
-type StrapiFilters = Record<string, StrapiFilterOperator | string | number>;
+export type StrapiFilters = Record<
+  string,
+  StrapiFilterOperator | string | number
+>;
 
 /**
  * 公版函式：取得 Strapi 資料
