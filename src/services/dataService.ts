@@ -1,14 +1,14 @@
 //公版
 import axios from "axios";
-import { createClient } from "@supabase/supabase-js";
+// import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const supabase = createClient(
-  process.env.DATABASE_URL!,
-  process.env.DATABASE_SERVICE_ROLE_KEY!
-);
+// const supabase = createClient(
+//   process.env.DATABASE_URL!,
+//   process.env.DATABASE_SERVICE_ROLE_KEY!
+// );
 
 const strapiClient = axios.create({
   baseURL: process.env.STRAPI_URL,
