@@ -49,11 +49,9 @@ export const addToCart = async (req: Request, res: Response) => {
 
         // 強制轉換為 Connect Syntax 
         // 嘗試改用 'set' 語法測試
-        // ⚠️ 暫時移除 snapshot_image，因為 Strapi Schema 可能是 Media Relation，傳文字會報錯
-        const { snapshot_image, ...cleanPayload } = payload;
-
+        // ✅ Strapi Schema 已更新為 Long Text，恢復 snapshot_image 寫入
         const strapiPayload = {
-            ...cleanPayload,
+            ...payload,
             user: { set: [payload.user] },
             product: { set: [payload.product] }
         };
