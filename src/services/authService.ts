@@ -32,6 +32,23 @@ export const authService = {
       identifier,
       password,
     });
+
+    // Strapi v5 Login 回傳的 user 物件可能不包含 documentId
+    // 因此我們需要額外呼叫 /api/users/me 來取得完整資訊
+    if (response.data.jwt) {
+      try {
+        const meRes = await strapiClient.get(`${STRAPI_URL}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${response.data.jwt}`
+          }
+        });
+        // 合併 user 資料
+        response.data.user = { ...response.data.user, ...meRes.data };
+      } catch (error) {
+        console.error("Failed to fetch user details:", error);
+      }
+    }
+
     return response.data;
   },
 

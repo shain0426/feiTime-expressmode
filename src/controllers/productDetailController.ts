@@ -19,6 +19,7 @@ export async function productDetailHandler(req: Request, res: Response) {
 
     const data = await fetchStrapiData("products", "*", 1, 100, {
       fields: [
+        "documentId", // Add documentId
         "name",
         "english_name",
         "pid",
@@ -59,6 +60,7 @@ export async function singleProductHandler(req: Request, res: Response) {
 
     const data = await fetchStrapiData("products", "*", 1, 1, {
       fields: [
+        "documentId", // Add documentId
         "name",
         "english_name",
         "pid",

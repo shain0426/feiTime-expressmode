@@ -65,4 +65,18 @@ router.post(
   emailActionLimiter,
   authController.resetPassword
 );
+
+// === 購物車相關 ===
+import {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeCartItem,
+} from "@/controllers/cartController";
+
+router.get("/cart", getCart);
+router.post("/cart", addToCart);
+router.put("/cart/:documentId", updateCartItem);
+router.delete("/cart/:documentId", removeCartItem);
+
 export default router;
