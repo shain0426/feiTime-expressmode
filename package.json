@@ -7,11 +7,11 @@
   "description": "FeiTime Express Backend API",
   "main": "dist/index.js",
   "engines": {
-    "node": "18.x"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "dev": "nodemon --require tsconfig-paths/register src/index.ts",
-    "build": "tsc && tsc-alias",
+    "build": "npx tsc && npx tsc-alias",
     "start": "node -r module-alias/register dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
