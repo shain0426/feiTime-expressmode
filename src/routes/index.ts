@@ -48,8 +48,8 @@ router.get("/product-detail", productDetailHandler); // 產品詳細資訊
 router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細資訊
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
-router.get("/admin/order", orderListHandler); // 訂單資訊
-router.get("/admin/order/:order_number", singleOrderHandler); // 單一訂單資訊
+router.get("/admin-orders", orderListHandler); // 訂單資訊
+router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 
 // === 註冊相關 ===
