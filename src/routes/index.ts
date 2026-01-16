@@ -72,11 +72,13 @@ import {
   addToCart,
   updateCartItem,
   removeCartItem,
+  clearUserCart,
 } from "@/controllers/cartController";
 
 router.get("/cart", getCart);
 router.post("/cart", addToCart);
 router.put("/cart/:documentId", updateCartItem);
 router.delete("/cart/:documentId", removeCartItem);
+router.delete("/cart", clearUserCart);
 
 export default router;

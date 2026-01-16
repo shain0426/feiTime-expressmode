@@ -118,3 +118,44 @@ export const removeCartItem = async (req: Request, res: Response) => {
         res.status(500).json({ error: "Failed to remove cart item" });
     }
 };
+
+/**
+ * DELETE /api/cart
+ * 清空某使用者的購物車
+ * Query: ?userId=123
+ */
+export const clearUserCart = async (req: Request, res: Response) => {
+    try {
+        const userId = req.query.userId;
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId" });
+        }
+
+        // 1. 先查出該 User 所有 Cart Items
+        const filters = {
+            user: { id: { $eq: userId } },
+        };
+        const cartItems = await fetchStrapiData("cart-items", "*", 1, 100, { filters });
+
+        if (!cartItems || cartItems.length === 0) {
+            return res.json({ success: true, message: "Cart is already empty" });
+        }
+
+        console.log(`🧹 Clearing cart for user ${userId}. Found ${cartItems.length} items.`);
+
+        // 2. 逐筆刪除 (因為 Strapi 預設 API 不支援 Batch Delete by Filter)
+        const deletePromises = cartItems.map((item: any) => {
+            if (item.documentId) {
+                return deleteStrapiData("cart-items", item.documentId);
+            }
+            return Promise.resolve();
+        });
+
+        await Promise.all(deletePromises);
+
+        res.json({ success: true, deletedCount: cartItems.length });
+    } catch (error: any) {
+        console.error("[clearUserCart error]", error);
+        res.status(500).json({ error: "Failed to clear cart" });
+    }
+};
