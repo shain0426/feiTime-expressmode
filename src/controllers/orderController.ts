@@ -14,3 +14,16 @@ export async function getCart(req: Request, res: Response) {
     });
   }
 }
+
+export async function orderCome(req: Request, res: Response) {
+  try {
+    res.json();
+  } catch (error: any) {
+    console.error("後端報錯:", error);
+    res.status(500).json({
+      error: "取得訂單失敗",
+      message: error.message,
+      detail: error.response?.data,
+    });
+  }
+}

@@ -23,7 +23,7 @@ import {
 } from "@/middlewares/rateLimiters";
 import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
-import { getCart } from "@/controllers/orderController";
+import { getCart, orderCome } from "@/controllers/orderController";
 
 const router = Router();
 
@@ -46,7 +46,8 @@ router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細�
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
-router.get("/get-cart", getCart); // 取得訂單部分
+router.get("/get-cart", getCart); // 讓前端取得購物
+router.post("/orders/checkout", orderCome); // 前端送訂單來
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
