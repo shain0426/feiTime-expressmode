@@ -39,6 +39,7 @@ export const fetchStrapiData = async (
     fields?: string[];
     filters?: Record<string, any>;
     sort?: string[];
+    populate?: string[];  // 新增：指定要展開的關聯
   }
 ) => {
   try {
@@ -83,6 +84,16 @@ export const fetchStrapiData = async (
     if (options?.sort?.length) {
       options.sort.forEach((s, index) => {
         params[`sort[${index}]`] = s;
+      });
+    }
+
+    // populate (覆蓋預設的 "*")
+    // 如果有傳 populate (關聯展開，例如 ["product"])
+    // 會覆蓋預設的 populate 參數
+    if (options?.populate?.length) {
+      delete params.populate;  // 移除預設的 "*"
+      options.populate.forEach((rel, index) => {
+        params[`populate[${index}]`] = rel;
       });
     }
 

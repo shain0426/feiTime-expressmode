@@ -23,7 +23,10 @@ export const getCart = async (req: Request, res: Response) => {
             user: { id: { $eq: userId } },
         };
 
-        const data = await fetchStrapiData("cart-items", "*", 1, 100, { filters });
+        const data = await fetchStrapiData("cart-items", "*", 1, 100, {
+            filters,
+            populate: ['product']  // 展開 product 關聯以取得即時庫存
+        });
         res.json(data);
     } catch (error: any) {
         console.error("[getCart error]", error);
