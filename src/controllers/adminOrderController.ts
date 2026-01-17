@@ -81,3 +81,36 @@ export async function singleOrderHandler(req: Request, res: Response) {
     });
   }
 }
+
+export async function shippedOrderHandler(req: Request, res: Response) {
+  try {
+    const { order_number } = req.params; // 從 URL 參數取得 pid
+
+    const data = await fetchStrapiData("orders", "*", 1, 1, {
+      fields: [
+        "order_number",
+        "order_status",
+        "shipping_method",
+        "tracking_number",
+      ],
+      filters: {
+        order_number: { $eq: order_number }, // 根據 order_number 篩選
+      },
+    });
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        error: "找不到此商品",
+      });
+    }
+
+    res.json({
+      data: data[0], // 回傳單筆資料
+    });
+  } catch (error: any) {
+    console.error("[singleOrderHandler error]", error);
+    res.status(500).json({
+      error: "取得商品失敗",
+    });
+  }
+}
