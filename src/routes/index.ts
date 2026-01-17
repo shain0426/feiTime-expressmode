@@ -23,7 +23,7 @@ import {
 } from "@/middlewares/rateLimiters";
 import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
-import { getCart, orderCome } from "@/controllers/orderController";
+import { getCart, orderCome, orderGet } from "@/controllers/orderController";
 
 const router = Router();
 
@@ -48,13 +48,14 @@ router.get("/featured/products", featuredProductHandler); // 首頁：精選產�
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.get("/get-cart", getCart); // 讓前端取得購物
 router.post("/orders/checkout", orderCome); // 前端送訂單來
+router.get("/order/giveme", orderGet);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
 router.post(
   "/auth/local/send-email-confirmation",
   emailActionLimiter,
-  resendEmail
+  resendEmail,
 );
 
 // === 登入相關 ===
@@ -62,11 +63,11 @@ router.post("/login", loginLimiter, loginController);
 router.post(
   "/auth/forgot-password",
   emailActionLimiter,
-  authController.forgotPassword
+  authController.forgotPassword,
 );
 router.post(
   "/auth/reset-password",
   emailActionLimiter,
-  authController.resetPassword
+  authController.resetPassword,
 );
 export default router;
