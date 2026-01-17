@@ -7,7 +7,7 @@ dotenv.config();
 
 const supabase = createClient(
   process.env.DATABASE_URL!,
-  process.env.DATABASE_SERVICE_ROLE_KEY!
+  process.env.DATABASE_SERVICE_ROLE_KEY!,
 );
 
 const strapiClient = axios.create({
@@ -39,7 +39,7 @@ export const fetchStrapiData = async (
     fields?: string[];
     filters?: Record<string, any>;
     sort?: string[];
-  }
+  },
 ) => {
   try {
     // 初始化 params，放基本的分頁與 populate 設定
@@ -111,5 +111,30 @@ export const fetchSupabaseData = async (tableName: string, columns = "*") => {
     return data;
   } catch (err: any) {
     throw new Error(err.message);
+  }
+};
+
+/**
+ * 公版函式：新增資料到 Strapi
+ * @param table - Strapi table 名稱，例如 "products"
+ * @param dataObj - 要存入的資料物件
+ */
+export const strapiPost = async (table: string, dataObj: any) => {
+  try {
+    // Strapi 的規範：所有欄位必須放在 "data" 層級下
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.post(`/api/${table}`, body);
+
+    console.log(`✅ ${table} 新增成功:`, res.data);
+
+    // Strapi 回傳通常也會包在 data 欄位裡
+    return res.data?.data ?? null;
+  } catch (err: any) {
+    // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
+    console.error("❌ Strapi POST Error:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
   }
 };
