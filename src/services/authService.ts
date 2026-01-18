@@ -11,7 +11,7 @@ export const authService = {
   async registerUser(userData: any): Promise<AuthResponse> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/local/register`,
-      userData
+      userData,
     );
     return response.data;
   },
@@ -19,14 +19,14 @@ export const authService = {
   async sendConfirmationEmail(email: string) {
     const response = await strapiClient.post(
       `${process.env.STRAPI_URL}/api/auth/send-email-confirmation`,
-      { email }
+      { email },
     );
     return response.data;
   },
 
   async loginWithStrapi(
     identifier: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> {
     const response = await strapiClient.post(`${STRAPI_URL}/api/auth/local`, {
       identifier,
@@ -44,7 +44,45 @@ export const authService = {
   async requestStrapiResetPassword(body: any): Promise<void> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/reset-password`,
-      body
+      body,
+    );
+    return response.data;
+  },
+};
+
+export const userService = {
+  // 取得所有用戶
+  async getAllUsers() {
+    const response = await strapiClient.get(`${STRAPI_URL}/api/users`);
+    return response.data;
+  },
+
+  // 取得單一用戶
+  async getUserById(id: string) {
+    const response = await strapiClient.get(`${STRAPI_URL}/api/users/${id}`);
+    return response.data;
+  },
+
+  // 取得當前登入用戶
+  async getCurrentUser(token: string) {
+    const response = await strapiClient.get(`${STRAPI_URL}/api/users/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  // 更新用戶資訊
+  async updateUser(id: string, userData: any, token: string) {
+    const response = await strapiClient.put(
+      `${STRAPI_URL}/api/users/${id}`,
+      userData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
     );
     return response.data;
   },

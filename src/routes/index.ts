@@ -28,6 +28,7 @@ import {
   singleOrderHandler,
   updateOrderHandler,
 } from "@/controllers/adminOrderController";
+import { userController } from "@/controllers/adminUserController";
 
 const router = Router();
 
@@ -74,4 +75,11 @@ router.post(
   emailActionLimiter,
   authController.resetPassword,
 );
+
+// User相關
+router.get("/admin-users/me", userController.getCurrentUser);
+router.get("/admin-users", userController.getAllUsers);
+router.get("/admin-users/:id", userController.getSingleUser);
+router.put("/admin-users/:id", userController.updateUser);
+
 export default router;
