@@ -26,7 +26,7 @@ import * as authController from "@/controllers/authController";
 import {
   orderListHandler,
   singleOrderHandler,
-  shippedOrderHandler,
+  updateOrderHandler,
 } from "@/controllers/adminOrderController";
 
 const router = Router();
@@ -52,7 +52,7 @@ router.get("/featured/products", featuredProductHandler); // 首頁：精選產�
 router.get("/admin-orders", orderListHandler); // 訂單資訊
 router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
-router.post("/admin-shipped-orders/:order_number", shippedOrderHandler); // 單一訂單運送資訊
+router.put("/admin-orders/:order_number", updateOrderHandler); // 更新單一訂單運送資訊
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
