@@ -23,7 +23,12 @@ import {
 } from "@/middlewares/rateLimiters";
 import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
-import { getCart, orderCome, orderGet } from "@/controllers/orderController";
+import {
+  getCart,
+  orderCome,
+  orderGet,
+  orderUpdate,
+} from "@/controllers/orderController";
 
 const router = Router();
 
@@ -49,6 +54,7 @@ router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.get("/get-cart", getCart); // 讓前端取得購物
 router.post("/orders/checkout", orderCome); // 前端送訂單來
 router.get("/order/giveme", orderGet);
+router.put("/order/updata", orderUpdate);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
