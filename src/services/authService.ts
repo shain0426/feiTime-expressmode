@@ -11,7 +11,7 @@ export const authService = {
   async registerUser(userData: any): Promise<AuthResponse> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/local/register`,
-      userData,
+      userData
     );
     return response.data;
   },
@@ -19,14 +19,14 @@ export const authService = {
   async sendConfirmationEmail(email: string) {
     const response = await strapiClient.post(
       `${process.env.STRAPI_URL}/api/auth/send-email-confirmation`,
-      { email },
+      { email }
     );
     return response.data;
   },
 
   async loginWithStrapi(
     identifier: string,
-    password: string,
+    password: string
   ): Promise<AuthResponse> {
     const response = await strapiClient.post(`${STRAPI_URL}/api/auth/local`, {
       identifier,
@@ -44,7 +44,7 @@ export const authService = {
   async requestStrapiResetPassword(body: any): Promise<void> {
     const response = await strapiClient.post(
       `${STRAPI_URL}/api/auth/reset-password`,
-      body,
+      body
     );
     return response.data;
   },
@@ -82,7 +82,7 @@ export const userService = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
     return response.data;
   },

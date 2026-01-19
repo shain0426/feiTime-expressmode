@@ -60,7 +60,7 @@ router.post("/auth/local/register", strictAccountLimiter, register);
 router.post(
   "/auth/local/send-email-confirmation",
   emailActionLimiter,
-  resendEmail,
+  resendEmail
 );
 
 // === 登入相關 ===
@@ -68,18 +68,18 @@ router.post("/login", loginLimiter, loginController);
 router.post(
   "/auth/forgot-password",
   emailActionLimiter,
-  authController.forgotPassword,
+  authController.forgotPassword
 );
 router.post(
   "/auth/reset-password",
   emailActionLimiter,
-  authController.resetPassword,
+  authController.resetPassword
 );
 
 // User相關
-router.get("/admin-users/me", userController.getCurrentUser);
-router.get("/admin-users", userController.getAllUsers);
-router.get("/admin-users/:id", userController.getSingleUser);
-router.put("/admin-users/:id", userController.updateUser);
+router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
+router.get("/admin-users", userController.getAllUsers); // 使用者資訊
+router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
+router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
 
 export default router;

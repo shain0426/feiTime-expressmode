@@ -16,7 +16,7 @@ export const userController = {
   },
 
   // 取得單一用戶
-  async getSingleUser(req: Request, res: Response, next: NextFunction) {
+  async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
       const user = await userService.getUserById(id);

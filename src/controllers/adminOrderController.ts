@@ -72,7 +72,7 @@ export async function orderListHandler(req: Request, res: Response) {
 
 export async function singleOrderHandler(req: Request, res: Response) {
   try {
-    const { order_number } = req.params; // 從 URL 參數取得 pid
+    const { order_number } = req.params; // 從 URL 參數取得 order_number
 
     const data = await fetchStrapiData("orders", "*", 1, 1, {
       filters: {
@@ -100,6 +100,7 @@ export async function singleOrderHandler(req: Request, res: Response) {
 export async function updateOrderHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params;
+    // req.body用來放「請求內容本體」，用在「送資料給後端」的請求
     const { tracking_number, shipped_at } = req.body;
 
     // 驗證必填欄位
@@ -109,7 +110,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
       });
     }
 
-    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 documentId）
+    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 id)
     const orders = await fetchStrapiData("orders", "*", 1, 1, {
       filters: {
         order_number: { $eq: order_number },
@@ -132,13 +133,8 @@ export async function updateOrderHandler(req: Request, res: Response) {
       order_status: "shipped",
     };
 
-    // 用 documentId 更新訂單（真正修改）
-    // 必須用 documentId（Strapi API 限制）
-    const updatedOrder = await updateStrapiData(
-      "orders",
-      order.documentId,
-      updateData,
-    );
+    // 用 id 更新訂單（真正修改），必須用 id（Strapi API 限制）
+    const updatedOrder = await updateStrapiData("orders", order.id, updateData);
 
     // 更新成功 → 回傳給前端
     res.json({
