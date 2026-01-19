@@ -59,34 +59,19 @@ export async function orderGet(req: Request, res: Response) {
   }
 }
 
-export async function orderUpdate(req: Request, res: Response) {
+export const orderUpdate = async (req: Request, res: Response) => {
   try {
-    const orderId = req.body.order_number;
-    const findRes = await strapiClient.get(
-      `/api/orders?filters[order_number][$eq]=${orderId}`,
-    );
-    const actualOrder = findRes.data.data[0];
+    const id = req.params.id.toString();
+    // const id = (Number(req.params.id) - 1).toString();
+    const updateBody = req.body;
 
-    if (!actualOrder) {
-      return res.status(404).json({ message: "找不到此訂單編號" });
-    }
+    console.log("看id");
+    console.log(id);
 
-    const realId = actualOrder.id;
-
-    const update = await strapiPut(`/api/orders/${realId}`, {
-      data: {
-        payment_status: "paid",
-        order_status: "processing",
-        paid_at: new Date().toISOString(),
-      },
-    });
-    res.json(update.data);
-  } catch (error: any) {
-    console.error("後端報錯:", error);
-    res.status(500).json({
-      error: "取得訂單失敗",
-      message: error.message,
-      detail: error.response?.data,
-    });
+    const result = await strapiPut("orders", updateBody, id);
+    console.log(result.data);
+    res.status(200).json(result.data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-}
+};

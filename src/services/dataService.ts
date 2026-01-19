@@ -139,13 +139,13 @@ export const strapiPost = async (table: string, dataObj: any) => {
   }
 };
 
-export const strapiPut = async (table: string, dataObj: any) => {
+export const strapiPut = async (table: string, dataObj: any, id: string) => {
   try {
     const body = {
       data: dataObj,
     };
 
-    const res = await strapiClient.put(`/api/${table}`, body);
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
 
     console.log(`✅ ${table} 資料更新成功:`, res.data);
 
