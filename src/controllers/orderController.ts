@@ -76,3 +76,17 @@ export const orderUpdate = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export async function productsGet(req: Request, res: Response) {
+  try {
+    const product = await fetchStrapiData("products", "*", 1, 100);
+    res.json(product);
+  } catch (error: any) {
+    console.error("後端報錯:", error);
+    res.status(500).json({
+      error: "取得訂單失敗",
+      message: error.message,
+      detail: error.response?.data,
+    });
+  }
+}
