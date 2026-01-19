@@ -62,16 +62,17 @@ export async function orderGet(req: Request, res: Response) {
 export const orderUpdate = async (req: Request, res: Response) => {
   try {
     const id = req.params.id.toString();
-    // const id = (Number(req.params.id) - 1).toString();
     const updateBody = req.body;
 
-    console.log("看id");
+    console.log("看資料");
     console.log(id);
+    console.log(updateBody);
 
     const result = await strapiPut("orders", updateBody, id);
     console.log(result.data);
     res.status(200).json(result.data);
   } catch (err: any) {
+    console.error("PUT錯誤", err.message);
     res.status(500).json({ error: err.message });
   }
 };

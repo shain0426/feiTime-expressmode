@@ -152,8 +152,7 @@ export const strapiPut = async (table: string, dataObj: any, id: string) => {
     // Strapi 回傳通常也會包在 data 欄位裡
     return res.data?.data ?? null;
   } catch (err: any) {
-    // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
-    console.error("❌ Strapi POST Error:", err.response?.data || err.message);
+    console.error("❌ 失敗:", err.response?.data || err.message);
     throw new Error(err.response?.data?.error?.message || "資料新增失敗");
   }
 };
