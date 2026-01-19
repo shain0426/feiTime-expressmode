@@ -147,10 +147,8 @@ export const strapiPut = async (table: string, dataObj: any, id: string) => {
 
     const res = await strapiClient.put(`/api/${table}/${id}`, body);
 
-    console.log(`✅ ${table} 資料更新成功:`, res.data);
-
-    // Strapi 回傳通常也會包在 data 欄位裡
-    return res.data?.data ?? null;
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
   } catch (err: any) {
     console.error("❌ 失敗:", err.response?.data || err.message);
     throw new Error(err.response?.data?.error?.message || "資料新增失敗");

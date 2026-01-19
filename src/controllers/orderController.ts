@@ -70,7 +70,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
     const result = await strapiPut("orders", updateBody, id);
     console.log(result.data);
-    res.status(200).json(result.data);
+    res.status(200).json(result);
   } catch (err: any) {
     console.error("PUT錯誤", err.message);
     res.status(500).json({ error: err.message });
