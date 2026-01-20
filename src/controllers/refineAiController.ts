@@ -80,7 +80,7 @@ export async function getRefineReport(req: Request, res: Response) {
         }];
 
         const text = await geminiText(messages, {
-            model: "gemini-3-pro-preview", // User specified: Gemini 3 Pro
+            model: "gemini-3-flash-preview", // User specified: Consolidate to Flash
         });
 
         const cleanText = text.replace(/```json|```/g, "").trim();

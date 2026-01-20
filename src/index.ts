@@ -26,4 +26,7 @@ app.use("/api", routes);
 //啟動 server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+  // DEBUG: Prevent process from exiting if event loop is empty (防呆用)
+  setInterval(() => { }, 60000);
 });
