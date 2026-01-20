@@ -8,6 +8,7 @@ import {
   recommendProductsHandler,
 } from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
+import { getRefineAdvice, getRefineReport } from "@/controllers/refineAiController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
   flavorMusicHandler,
@@ -30,6 +31,8 @@ const router = Router();
 // === Gemini AI 相關 ===
 router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
+router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
+router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
 
 // === 首頁-風味音樂推薦系統 ===
 router.post("/music/flavor", flavorMusicHandler); // 根據風味推薦音樂
