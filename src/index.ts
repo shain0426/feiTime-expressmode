@@ -53,7 +53,7 @@ app.get("/share", (req, res) => {
       <meta charset="UTF-8">
       <title>Coffee ID - ${name}</title>
       
-      <meta property="og:title" content="我的咖啡人格是：${name}">
+      <meta property="og:title" content="我的咖啡風格是：${name}，快來FeiTime Coffee一起測一測！">
       <meta property="og:image" content="${img}">
       <meta property="og:type" content="website">
 
