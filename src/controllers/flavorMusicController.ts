@@ -133,6 +133,9 @@ const getGeminiRecommendation = async (
   description: string,
 ): Promise<{ genre: string; searches: string[] }> => {
   try {
+    console.log(`🤖 Requesting Gemini recommendation for: ${flavorName}`);
+    const startTime = Date.now();
+
     const prompt = generateMusicPrompt(flavorName, description);
 
     const messages: GeminiMessage[] = [
@@ -143,9 +146,12 @@ const getGeminiRecommendation = async (
     ];
 
     const responseText = await geminiText(messages, {
-      model: "gemini-2.5-flash",
-      maxRetries: 3,
+      model: "gemini-2.5-flash", // 使用 flash 模型以提升速度
+      maxRetries: 2, // 減少重試次數
     });
+
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️ Gemini response time: ${elapsed}ms`);
 
     const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
     if (jsonMatch) {
@@ -163,6 +169,7 @@ const getGeminiRecommendation = async (
     };
   } catch (error) {
     console.error("Gemini API error:", error);
+    // 返回備用推薦而不是拋出錯誤
     return {
       genre: "popular music",
       searches: ["周杰倫", "BTS", "pop music", "piano", "OST"],
@@ -185,11 +192,11 @@ const parseDuration = (duration: string): number => {
 };
 
 /**
- * 搜尋 YouTube 影片（單一關鍵字）
+ * 搜尋 YouTube 影片（單一關鍵字） - 優化版
  */
 const searchYouTubeByKeyword = async (
   keyword: string,
-  maxResults: number = 5,
+  maxResults: number = 3,
 ): Promise<YouTubeVideo[]> => {
   try {
     if (!YOUTUBE_API_KEY) {
@@ -197,19 +204,22 @@ const searchYouTubeByKeyword = async (
     }
 
     console.log(`🔍 Searching: "${keyword}"`);
+    const startTime = Date.now();
 
+    // 優化：減少請求的結果數量
     const searchResponse = await axios.get(YOUTUBE_SEARCH_URL, {
       params: {
         part: "snippet",
         q: keyword,
         type: "video",
-        maxResults: maxResults * 2,
+        maxResults: maxResults * 2, // 減少請求數量
         key: YOUTUBE_API_KEY,
         videoCategoryId: "10",
-        order: "viewCount",
+        order: "relevance", // 改用相關性排序，更快
         videoEmbeddable: "true",
         safeSearch: "moderate",
       },
+      timeout: 5000, // 添加 5 秒超時
     });
 
     if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
@@ -226,7 +236,11 @@ const searchYouTubeByKeyword = async (
         id: videoIds,
         key: YOUTUBE_API_KEY,
       },
+      timeout: 5000, // 添加 5 秒超時
     });
+
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️ YouTube search time: ${elapsed}ms`);
 
     if (!detailsResponse.data.items) {
       return [];
@@ -237,8 +251,9 @@ const searchYouTubeByKeyword = async (
         const viewCount = parseInt(item.statistics.viewCount || "0", 10);
         const duration = parseDuration(item.contentDetails.duration);
 
-        if (viewCount < 100000) return false;
-        if (duration < 2.5 || duration > 10) return false;
+        // 放寬篩選條件以加快速度
+        if (viewCount < 50000) return false; // 降低觀看次數門檻
+        if (duration < 2 || duration > 12) return false; // 稍微放寬時長限制
 
         return true;
       })
@@ -254,14 +269,18 @@ const searchYouTubeByKeyword = async (
       }));
 
     return filtered;
-  } catch (error) {
-    console.error(`Error searching ${keyword}:`, error);
+  } catch (error: any) {
+    if (error.code === "ECONNABORTED") {
+      console.error(`❌ Timeout searching ${keyword}`);
+    } else {
+      console.error(`❌ Error searching ${keyword}:`, error.message);
+    }
     return [];
   }
 };
 
 /**
- * 從多個關鍵字搜尋並隨機選擇
+ * 從多個關鍵字搜尋並隨機選擇 - 優化版
  */
 const searchMultipleKeywords = async (
   searches: string[],
@@ -269,21 +288,40 @@ const searchMultipleKeywords = async (
 ): Promise<YouTubeVideo[]> => {
   try {
     console.log(`🎵 Searching multiple keywords: ${searches.join(", ")}`);
+    const startTime = Date.now();
 
     // 隨機打亂順序
     const shuffledSearches = [...searches].sort(() => 0.5 - Math.random());
 
     const allVideos: YouTubeVideo[] = [];
 
-    // 從每個關鍵字搜尋 1-2 個影片
-    for (const search of shuffledSearches) {
-      const videos = await searchYouTubeByKeyword(search, 2);
-      allVideos.push(...videos);
+    // 優化：並行搜索前 3-4 個關鍵字而不是順序搜索
+    const searchPromises = shuffledSearches
+      .slice(0, 4)
+      .map((search) => searchYouTubeByKeyword(search, 2));
 
-      if (allVideos.length >= totalResults * 4) {
-        break;
+    const results = await Promise.allSettled(searchPromises);
+
+    results.forEach((result) => {
+      if (result.status === "fulfilled") {
+        allVideos.push(...result.value);
+      }
+    });
+
+    // 如果結果不夠，再搜索剩餘的關鍵字
+    if (allVideos.length < totalResults * 2 && shuffledSearches.length > 4) {
+      for (
+        let i = 4;
+        i < shuffledSearches.length && allVideos.length < totalResults * 3;
+        i++
+      ) {
+        const videos = await searchYouTubeByKeyword(shuffledSearches[i], 2);
+        allVideos.push(...videos);
       }
     }
+
+    const elapsed = Date.now() - startTime;
+    console.log(`⏱️ Total search time: ${elapsed}ms`);
 
     if (allVideos.length === 0) {
       return [];
@@ -312,12 +350,14 @@ const searchMultipleKeywords = async (
 };
 
 /**
- * 主要的推薦控制器
+ * 主要的推薦控制器 - 優化版
  */
 export const flavorMusicHandler = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const requestStartTime = Date.now();
+
   try {
     const { flavorId, flavorName, description } = req.body as FlavorRequest;
 
@@ -331,12 +371,17 @@ export const flavorMusicHandler = async (
 
     console.log(`🎵 Processing music recommendation for flavor: ${flavorName}`);
 
-    // 1. 使用 Gemini 生成多元化的搜尋關鍵字
-    const geminiRec = await getGeminiRecommendation(flavorName, description);
+    // 1. 使用 Gemini 生成多元化的搜尋關鍵字（並行執行）
+    const geminiPromise = getGeminiRecommendation(flavorName, description);
+
+    const geminiRec = await geminiPromise;
     console.log(`🤖 Gemini recommendation:`, geminiRec);
 
     // 2. 從多個關鍵字搜尋並隨機選擇
     const videos = await searchMultipleKeywords(geminiRec.searches, 5);
+
+    const totalElapsed = Date.now() - requestStartTime;
+    console.log(`⏱️ Total request time: ${totalElapsed}ms`);
 
     if (videos.length === 0) {
       res.status(200).json({
@@ -365,7 +410,8 @@ export const flavorMusicHandler = async (
 
     res.status(200).json(response);
   } catch (error) {
-    console.error("❌ Recommendation error:", error);
+    const totalElapsed = Date.now() - requestStartTime;
+    console.error(`❌ Recommendation error (${totalElapsed}ms):`, error);
     res.status(500).json({
       success: false,
       message: "推薦系統暫時無法使用，請稍後再試",
@@ -374,12 +420,14 @@ export const flavorMusicHandler = async (
 };
 
 /**
- * 取得隨機推薦（用於 Next 按鈕）
+ * 取得隨機推薦（用於 Next 按鈕） - 優化版
  */
 export const randomMusicHandler = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const requestStartTime = Date.now();
+
   try {
     const { currentFlavorName } = req.body;
 
@@ -396,6 +444,9 @@ export const randomMusicHandler = async (
     // 重新生成推薦（會得到不同的隨機結果）
     const geminiRec = await getGeminiRecommendation(currentFlavorName, "");
     const videos = await searchMultipleKeywords(geminiRec.searches, 5);
+
+    const totalElapsed = Date.now() - requestStartTime;
+    console.log(`⏱️ Random recommendation time: ${totalElapsed}ms`);
 
     if (videos.length === 0) {
       res.status(200).json({
@@ -415,7 +466,8 @@ export const randomMusicHandler = async (
       recommendation: `為您找到更多 ${currentFlavorName} 風味的音樂`,
     });
   } catch (error) {
-    console.error("❌ Random recommendation error:", error);
+    const totalElapsed = Date.now() - requestStartTime;
+    console.error(`❌ Random recommendation error (${totalElapsed}ms):`, error);
     res.status(500).json({
       success: false,
       message: "無法取得推薦",
