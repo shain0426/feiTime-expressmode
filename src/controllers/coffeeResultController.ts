@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { coffeeResultService } from "@/services/coffeeResultService";
+import { handleError } from "@/utils";
 
 export const saveCoffeeResultHandler = async (req: Request, res: Response) => {
   try {
@@ -11,20 +12,11 @@ export const saveCoffeeResultHandler = async (req: Request, res: Response) => {
 
     // 3. 回傳 Strapi 的結果給 Vue 前端
     return res.status(200).json(result);
-  } catch (error: any) {
-    console.error(
-      "[Controller Error] 轉發測驗結果失敗:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    // 記錄具體的業務錯誤場景
+    console.error("[Controller Error] 轉發測驗結果失敗:", error);
 
-    // 取得 Strapi 回傳的狀態碼，若無則預設 500
-    const statusCode = error.response?.status || 500;
-    const errorMessage =
-      error.response?.data?.error?.message || "內部伺服器錯誤";
-
-    return res.status(statusCode).json({
-      success: false,
-      message: errorMessage,
-    });
+    // 統一錯誤處理：取得 Strapi 回傳的狀態碼與錯誤訊息
+    return handleError(error, res, "內部伺服器錯誤");
   }
 };

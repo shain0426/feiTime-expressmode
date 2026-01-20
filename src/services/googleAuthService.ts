@@ -1,19 +1,24 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import { strapiClient } from "@/services/dataService";
 import { StrapiAuthResponse } from "../types/auth";
 
-const STRAPI_URL = process.env.STRAPI_URL || "http://localhost:1337";
-
 class GoogleAuthService {
+  /**
+   * 取得 Google OAuth 認證 URL
+   */
   getGoogleAuthUrl(): string {
-    return `${STRAPI_URL}/api/connect/google`;
+    return `${strapiClient.defaults.baseURL}/api/connect/google`;
   }
 
+  /**
+   * 使用 Google access token 向 Strapi 進行身份驗證
+   */
   async authenticateWithGoogle(
     accessToken: string
   ): Promise<StrapiAuthResponse> {
     try {
-      const response = await axios.get<StrapiAuthResponse>(
-        `${STRAPI_URL}/api/auth/google/callback`,
+      const response = await strapiClient.get<StrapiAuthResponse>(
+        "/api/auth/google/callback",
         {
           params: { access_token: accessToken },
         }
@@ -21,18 +26,20 @@ class GoogleAuthService {
 
       return response.data;
     } catch (error) {
+      // 使用 axios 的類型守衛檢查錯誤
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
         console.error(
           "Strapi Google auth error:",
-          axiosError.response?.data || axiosError.message
+          error.response?.data || error.message
         );
 
-        if (axiosError.response?.status === 401) {
+        // 根據 HTTP 狀態碼拋出對應的錯誤訊息
+        const status = error.response?.status;
+        if (status === 401) {
           throw new Error("Google 授權驗證失敗");
-        } else if (axiosError.response?.status === 400) {
+        } else if (status === 400) {
           throw new Error("無效的 access token");
-        } else if (axiosError.response?.status === 403) {
+        } else if (status === 403) {
           throw new Error("此帳號已被停用");
         }
       }
@@ -41,12 +48,21 @@ class GoogleAuthService {
     }
   }
 
-  buildFrontendCallbackUrl(jwt: string, user: any): string {
+  /**
+   * 建構前端回調 URL（成功）
+   */
+  buildFrontendCallbackUrl(
+    jwt: string,
+    user: StrapiAuthResponse["user"]
+  ): string {
     const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
     const userEncoded = encodeURIComponent(JSON.stringify(user));
     return `${FRONTEND_URL}/auth/google/callback?jwt=${jwt}&user=${userEncoded}`;
   }
 
+  /**
+   * 建構前端錯誤 URL
+   */
   buildFrontendErrorUrl(
     errorType: "no_token" | "auth_failed" | "account_disabled"
   ): string {

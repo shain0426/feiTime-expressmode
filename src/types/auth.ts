@@ -28,6 +28,7 @@ export interface StrapiUser {
     name: string;
     type: string;
   };
+  [key: string]: unknown;
 }
 
 export interface StrapiAuthResponse {
