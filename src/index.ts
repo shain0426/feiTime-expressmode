@@ -35,6 +35,43 @@ app.use("/api", routes);
 // google 註冊的route
 app.use("/api", googleAuthRouter);
 
+//分享功能的route
+app.get("/share", (req, res) => {
+  console.log("收到分享請求！參數：", req.query);
+  res.setHeader("ngrok-skip-browser-warning", "true");
+  const { name, img } = req.query;
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  if (!name || !img || img === "undefined") {
+    return res.redirect(frontendUrl);
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+      <meta charset="UTF-8">
+      <title>Coffee ID - ${name}</title>
+      
+      <meta property="og:title" content="我的咖啡人格是：${name}">
+      <meta property="og:image" content="${img}">
+      <meta property="og:type" content="website">
+
+      <script>
+        window.location.href = "${frontendUrl}/#/coffee-result?persona=${encodeURIComponent(name as string)}";
+      </script>
+    </head>
+    <body>
+      <div style="display:flex; justify-content:center; align-items:center; height:100vh;">
+        <p>正在載入 ${name} 的 Coffee ID...</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  res.send(htmlContent);
+});
+
 //啟動 server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

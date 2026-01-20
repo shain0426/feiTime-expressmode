@@ -2,7 +2,7 @@
   "name": "feitime-expressmode",
   "version": "1.0.0",
   "_moduleAliases": {
-    "@": "dist"
+    "@": "src"
   },
   "description": "FeiTime Express Backend API",
   "main": "dist/index.js",
