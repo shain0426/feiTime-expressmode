@@ -1,4 +1,4 @@
-import "module-alias/register";
+// import "module-alias/register";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -20,7 +20,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 //解析 JSON request body
