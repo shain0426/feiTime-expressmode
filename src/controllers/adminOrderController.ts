@@ -101,16 +101,20 @@ export async function updateOrderHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params;
     // req.body用來放「請求內容本體」，用在「送資料給後端」的請求
-    const { tracking_number, shipped_at } = req.body;
+    const { tracking_number, shipped_at } = (req.body ?? {}) as {
+      tracking_number?: string;
+      shipped_at?: string;
+    };
 
     // 驗證必填欄位
     if (!tracking_number || !shipped_at) {
       return res.status(400).json({
         error: "物流單號和出貨時間為必填",
+        gotBody: req.body ?? null,
       });
     }
 
-    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 id)
+    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 documentId )
     const orders = await fetchStrapiData("orders", "*", 1, 1, {
       filters: {
         order_number: { $eq: order_number },
@@ -126,6 +130,22 @@ export async function updateOrderHandler(req: Request, res: Response) {
     // 訂單編號理論上是唯一的，所以拿第一筆訂單
     const order = orders[0];
 
+    // 診斷日誌
+    console.log("📋 訂單資料:", {
+      id: order.id,
+      documentId: order.documentId,
+      order_number: order.order_number,
+    });
+
+    // 檢查 documentId 是否存在
+    if (!order.documentId) {
+      console.error("❌ 警告：documentId 不存在，訂單資料:", order);
+      return res.status(500).json({
+        error: "訂單缺少 documentId",
+        order: order,
+      });
+    }
+
     // 準備要更新的內容(物流編號和出貨時間)，並把訂單狀態改成shipped
     const updateData = {
       tracking_number,
@@ -133,8 +153,12 @@ export async function updateOrderHandler(req: Request, res: Response) {
       order_status: "shipped",
     };
 
-    // 用 id 更新訂單（真正修改），必須用 id（Strapi API 限制）
-    const updatedOrder = await updateStrapiData("orders", order.id, updateData);
+    // 用 documentId  更新訂單（真正修改），必須用 documentId （Strapi API 限制）
+    const updatedOrder = await updateStrapiData(
+      "orders",
+      order.documentId,
+      updateData,
+    );
 
     // 更新成功 → 回傳給前端
     res.json({
@@ -143,7 +167,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
       data: updatedOrder,
     });
   } catch (error: any) {
-    console.error("[shippedOrderHandler error]", error);
+    console.error("[updateOrderHandler error]", error);
     res.status(500).json({
       error: "更新出貨資訊失敗",
       details: error.message,

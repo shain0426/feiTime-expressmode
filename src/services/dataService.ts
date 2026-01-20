@@ -7,7 +7,7 @@ dotenv.config();
 
 const supabase = createClient(
   process.env.DATABASE_URL!,
-  process.env.DATABASE_SERVICE_ROLE_KEY!
+  process.env.DATABASE_SERVICE_ROLE_KEY!,
 );
 
 const strapiClient = axios.create({
@@ -39,7 +39,7 @@ export const fetchStrapiData = async (
     fields?: string[];
     filters?: Record<string, any>;
     sort?: string[];
-  }
+  },
 ) => {
   try {
     // 初始化 params，放基本的分頁與 populate 設定
@@ -117,17 +117,20 @@ export const fetchSupabaseData = async (tableName: string, columns = "*") => {
 // 修改內容
 export async function updateStrapiData(
   contentType: string,
-  id: string,
-  data: any
+  documentId: string,
+  data: any,
 ) {
   try {
-    const res = await strapiClient.put(`/api/${contentType}/${id}`, {
+    const res = await strapiClient.put(`/api/${contentType}/${documentId}`, {
       data, // Strapi 要求包在 data 裡
     });
 
     return res.data?.data;
   } catch (error: any) {
-    console.error(`[updateStrapiData] ${contentType}/${id} 更新失敗:`, error);
+    console.error(
+      `[updateStrapiData] ${contentType}/${documentId} 更新失敗:`,
+      error,
+    );
     throw error;
   }
 }
