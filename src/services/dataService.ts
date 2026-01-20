@@ -79,10 +79,24 @@ export const fetchStrapiData = async (
       "pagination[pageSize]": pageSize,
     };
 
+    // 遞迴函數：將巢狀物件展開為 Strapi 查詢參數格式
+    const flattenParams = (obj: any, prefix: string, target: any) => {
+      if (typeof obj === "object" && obj !== null) {
+        if (Array.isArray(obj)) {
+          obj.forEach((item, index) => {
+            flattenParams(item, `${prefix}[${index}]`, target);
+          });
+        } else {
+          Object.keys(obj).forEach((key) => {
+            flattenParams(obj[key], `${prefix}[${key}]`, target);
+          });
+        }
+      } else if (obj !== undefined) {
+        target[prefix] = String(obj);
+      }
+    };
+
     // fields
-    // 如果有傳 fields (想要回傳的欄位，例如 ["name","price"])
-    // 就把每個欄位依照 Strapi API 的格式加到 params 裡
-    // fields[0]=name, fields[1]=price
     if (options?.fields?.length) {
       options.fields.forEach((field, index) => {
         params[`fields[${index}]`] = field;
@@ -90,31 +104,13 @@ export const fetchStrapiData = async (
     }
 
     // filters
-    // 如果有傳 filters (篩選條件，例如 { origin: { $eq: "Taiwan" } })
-    // 會把物件展開成 Strapi API 可以理解的格式
-    // 例如 filters[origin][$eq]=Taiwan
     if (options?.filters) {
       Object.keys(options.filters).forEach((key) => {
-        const value = options.filters![key];
-        if (typeof value === "object" && value !== null) {
-          Object.keys(value).forEach((op) => {
-            const opValue = value[op as keyof typeof value];
-            if (opValue !== undefined) {
-              params[`filters[${key}][${op}]`] = Array.isArray(opValue)
-                ? opValue.join(",")
-                : String(opValue);
-            }
-          });
-        } else {
-          params[`filters[${key}]`] = String(value);
-        }
+        flattenParams(options.filters![key], `filters[${key}]`, params);
       });
     }
 
     // sort
-    // 如果有傳 sort (排序條件，例如 ["price:desc"])
-    // 就把每個排序條件依序加到 params 裡
-    // sort[0]=price:desc
     if (options?.sort?.length) {
       options.sort.forEach((s, index) => {
         params[`sort[${index}]`] = s;
@@ -122,22 +118,22 @@ export const fetchStrapiData = async (
     }
 
     // populate (覆蓋預設的 "*")
-    // 如果有傳 populate (關聯展開，例如 ["product"])
-    // 會覆蓋預設的 populate 參數
     if (options?.populate?.length) {
-      delete params.populate;  // 移除預設的 "*"
+      delete params.populate;
       options.populate.forEach((rel, index) => {
         params[`populate[${index}]`] = rel;
       });
     }
 
-    // 使用 upstream 改進的 queryString 處理（確保所有值都是字串）
+    // 使用 upstream 改進的 queryString 處理
     const queryString = new URLSearchParams(
       Object.entries(params).map(([key, value]) => [key, String(value)])
     ).toString();
     const fullUrl = `${strapiClient.defaults.baseURL}/api/${collectionName}?${queryString}`;
     console.log("🔍 FULL REQUEST URL:", fullUrl);
 
+    // 注意：axios 會自動處理 params，但我們已經手動展開了所有巢狀物件為 string
+    // 所以直接傳遞展開後的 params 是安全的
     const res = await strapiClient.get(`/api/${collectionName}`, { params });
 
     console.log("🚀 Strapi API URL:", res.request?.responseURL);
