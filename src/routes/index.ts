@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { geminiHandler } from "@/controllers/geminiController";
+// import { geminiHandler } from "@/controllers/geminiController";
 import { productHandler } from "@/controllers/productController";
 import { questionHandler } from "@/controllers/questionController";
 import {
@@ -24,12 +24,15 @@ import {
 } from "@/middlewares/rateLimiters";
 import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
+import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
+import googleAuthController from "../controllers/googleAuthController";
+
 const router = Router();
 
 // 所有API都放在這裡管理
 
 // === Gemini AI 相關 ===
-router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
+// router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
 router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
@@ -47,6 +50,7 @@ router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細�
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
+router.post("/coffee-results", saveCoffeeResultHandler);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
@@ -67,6 +71,12 @@ router.post(
   "/auth/reset-password",
   emailActionLimiter,
   authController.resetPassword
+);
+
+// === Google OAuth ===
+router.get(
+  "/auth/google/callback",
+  googleAuthController.handleGoogleCallback.bind(googleAuthController)
 );
 
 // === 購物車相關 ===

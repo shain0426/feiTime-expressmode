@@ -3,20 +3,6 @@ import { fetchStrapiData } from "@/services/dataService";
 
 export async function productDetailHandler(req: Request, res: Response) {
   try {
-    // 解析分頁參數，給預設值
-    const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 100;
-
-    // 呼叫公版函式取得資料
-    // const data = await fetchStrapiData("products", "*", page, pageSize);
-
-    //假設你要加篩選條件就會變成:
-    // const data = await fetchStrapiData("products", "", 1, 100, {
-    //   fields: ["name", "price"],
-    //   filters: { origin: { $eq: "Taiwan" } },
-    //   sort: ["price:desc"],
-    // });
-
     const data = await fetchStrapiData("products", "*", 1, 100, {
       fields: [
         "documentId", // Add documentId
@@ -45,7 +31,7 @@ export async function productDetailHandler(req: Request, res: Response) {
     // console.log("後端拿到資料", data);
     // 原樣回傳給前端
     // res.json(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[productDetailHandler error]", error);
 
     res.status(500).json({
@@ -87,7 +73,7 @@ export async function singleProductHandler(req: Request, res: Response) {
     res.json({
       data: data[0], // 回傳單筆資料
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[singleProductHandler error]", error);
     res.status(500).json({
       error: "取得商品失敗",
@@ -128,7 +114,7 @@ export async function recommendProductsHandler(req: Request, res: Response) {
     res.json({
       data: recommendations || [],
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[recommendProductsHandler error]", error);
     res.status(500).json({
       error: "取得推薦商品失敗",

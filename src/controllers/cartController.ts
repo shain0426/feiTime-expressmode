@@ -13,7 +13,7 @@ import {
  */
 export const getCart = async (req: Request, res: Response) => {
     try {
-        const userId = req.query.userId;
+        const userId = req.query.userId as string;
         if (!userId) {
             return res.status(400).json({ error: "Missing userId" });
         }
@@ -129,7 +129,7 @@ export const removeCartItem = async (req: Request, res: Response) => {
  */
 export const clearUserCart = async (req: Request, res: Response) => {
     try {
-        const userId = req.query.userId;
+        const userId = req.query.userId as string;
         if (!userId) {
             return res.status(400).json({ error: "Missing userId" });
         }
