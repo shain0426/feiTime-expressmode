@@ -11,7 +11,7 @@ export async function questionHandler(req: Request, res: Response) {
 
     console.log("後端拿到資料", data);
     res.json(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error("[questionHandler error]", error);
     res.status(500).json({
       error: "取得 questions 失敗",

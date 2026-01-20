@@ -1,0 +1,101 @@
+name: TS CI & Gemini Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  lint-and-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      # 步驟 1: 執行 Lint (語法規範檢查)
+      - name: Run Lint
+        run: npm run lint
+        # 即使 Lint 失敗也讓 AI 審核，方便開發者一次修完
+        continue-on-error: true
+
+      # 步驟 2: 執行 Type Check (型別檢查)
+      - name: Type Check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      # 步驟 3: Gemini AI 邏輯審核
+      - name: Gemini Code Review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node -e "
+          const { GoogleGenerativeAI } = require('@google/generative-ai');
+          const { execSync } = require('child_process');
+
+          async function review() {
+            try {
+              // 只針對 TS 和 TSX 檔案進行 Diff
+              const diff = execSync('git diff origin/${{ github.base_ref }} HEAD -- \"*.ts\" \"*.tsx\"').toString();
+              
+              if (!diff || diff.trim().length === 0) {
+                console.log('沒有偵測到 TS/TSX 變動，跳過 AI 審核。');
+                return;
+              }
+
+              const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+              const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+              const prompt = \`你是一位精通 TypeScript 的資深架構師。請審核以下程式碼變動（Diff）。
+
+              審核重點：
+              1. **型別安全**：是否濫用 'any'？介面 (Interface) 定義是否精確？
+              2. **邏輯風險**：是否有潛在的 Runtime Error、Race Condition 或記憶體問題？
+              3. **TS 特性**：是否可以使用更優雅的 TS 語法（如 Utility Types, Generics）來簡化代碼？
+              4. **效能建議**：檢查不必要的運算或重複渲染。
+
+              請用繁體中文回覆，若有建議請附上代碼範例。
+
+              --- Diff 開始 ---
+              \${diff}
+              --- Diff 結束 ---\`;
+
+              console.log('Gemini 正在分析中...');
+              const result = await model.generateContent(prompt);
+              const response = await result.response;
+              const reviewText = response.text();
+
+              const repo = '${{ github.repository }}';
+              const prNumber = ${{ github.event.number }};
+              
+              await fetch(\`https://api.github.com/repos/\${repo}/issues/\${prNumber}/comments\`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': \`token \${process.env.GITHUB_TOKEN}\`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  body: '### 🛡️ TS CI & Gemini AI Review\n\n' + reviewText
+                })
+              });
+              console.log('AI 評論已發布。');
+            } catch (error) {
+              console.error('審核過程發生錯誤:', error);
+            }
+          }
+          review();
+          "

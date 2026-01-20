@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { fetchStrapiData } from "@/services/dataService";
+import { handleError } from "@/utils";
 
-const STRAPI_URL = process.env.STRAPI_URL;
 export async function productHandler(req: Request, res: Response) {
   try {
     const roast = req.query.roast as string;
@@ -52,10 +52,7 @@ export async function productHandler(req: Request, res: Response) {
     );
 
     res.json(data);
-  } catch (error: any) {
-    console.error("[productHandler error]", error);
-    res.status(500).json({
-      error: "取得 products 失敗",
-    });
+  } catch (error) {
+    return handleError(error, res, "取得 products 失敗");
   }
 }

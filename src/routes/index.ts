@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { geminiHandler } from "@/controllers/geminiController";
+// import { geminiHandler } from "@/controllers/geminiController";
 import { productHandler } from "@/controllers/productController";
 import { questionHandler } from "@/controllers/questionController";
 import {
@@ -29,13 +29,15 @@ import {
   updateOrderHandler,
 } from "@/controllers/adminOrderController";
 import { userController } from "@/controllers/adminUserController";
+import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
+import googleAuthController from "../controllers/googleAuthController";
 
 const router = Router();
 
 // 所有API都放在這裡管理
 
 // === Gemini AI 相關 ===
-router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
+// router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 
 // === 首頁-風味音樂推薦系統 ===
@@ -54,13 +56,14 @@ router.get("/admin-orders", orderListHandler); // 訂單資訊
 router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.put("/admin-orders/:order_number", updateOrderHandler); // 更新單一訂單運送資訊
+router.post("/coffee-results", saveCoffeeResultHandler);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
 router.post(
   "/auth/local/send-email-confirmation",
   emailActionLimiter,
-  resendEmail
+  resendEmail,
 );
 
 // === 登入相關 ===
@@ -68,12 +71,16 @@ router.post("/login", loginLimiter, loginController);
 router.post(
   "/auth/forgot-password",
   emailActionLimiter,
-  authController.forgotPassword
+  authController.forgotPassword,
 );
 router.post(
   "/auth/reset-password",
   emailActionLimiter,
-  authController.resetPassword
+  authController.resetPassword,
+);
+router.get(
+  "/auth/google/callback",
+  googleAuthController.handleGoogleCallback.bind(googleAuthController),
 );
 
 // User相關

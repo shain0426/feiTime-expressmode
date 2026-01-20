@@ -1,89 +1,175 @@
-import axios from "axios";
+import { strapiClient } from "@/services/dataService";
 import { AuthResponse } from "@/types/auth";
 
-const STRAPI_URL = process.env.STRAPI_URL;
+/**
+ * 註冊用戶資料型別
+ */
+interface RegisterUserData {
+  username: string;
+  email: string;
+  password: string;
+}
 
-const strapiClient = axios.create({
-  baseURL: STRAPI_URL,
-});
+/**
+ * 重設密碼請求資料型別
+ */
+interface ResetPasswordData {
+  code: string;
+  password: string;
+  passwordConfirmation: string;
+}
 
 export const authService = {
-  async registerUser(userData: any): Promise<AuthResponse> {
+  /**
+   * 註冊新用戶
+   */
+  async registerUser(userData: RegisterUserData): Promise<AuthResponse> {
     const response = await strapiClient.post(
-      `${STRAPI_URL}/api/auth/local/register`,
-      userData
+      "/api/auth/local/register",
+      userData,
     );
     return response.data;
   },
 
+  /**
+   * 重新發送確認郵件
+   */
   async sendConfirmationEmail(email: string) {
     const response = await strapiClient.post(
-      `${process.env.STRAPI_URL}/api/auth/send-email-confirmation`,
-      { email }
+      "/api/auth/send-email-confirmation",
+      { email },
     );
     return response.data;
   },
 
+  /**
+   * 使用 Strapi 登入
+   */
   async loginWithStrapi(
     identifier: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> {
-    const response = await strapiClient.post(`${STRAPI_URL}/api/auth/local`, {
+    const response = await strapiClient.post("/api/auth/local", {
       identifier,
       password,
     });
     return response.data;
   },
 
+  /**
+   * 請求重設密碼（發送重設郵件）
+   */
   async requestStrapiForgotPassword(email: string): Promise<void> {
-    await strapiClient.post(`${STRAPI_URL}/api/auth/forgot-password`, {
-      email: email,
+    await strapiClient.post("/api/auth/forgot-password", {
+      email,
     });
   },
 
-  async requestStrapiResetPassword(body: any): Promise<void> {
-    const response = await strapiClient.post(
-      `${STRAPI_URL}/api/auth/reset-password`,
-      body
-    );
+  /**
+   * 重設密碼
+   */
+  async requestStrapiResetPassword(body: ResetPasswordData): Promise<void> {
+    const response = await strapiClient.post("/api/auth/reset-password", body);
     return response.data;
   },
 };
 
 export const userService = {
   // 取得所有用戶
-  async getAllUsers() {
-    const response = await strapiClient.get(`${STRAPI_URL}/api/users`);
-    return response.data;
-  },
-
-  // 取得單一用戶
-  async getUserById(id: string) {
-    const response = await strapiClient.get(`${STRAPI_URL}/api/users/${id}`);
-    return response.data;
-  },
-
-  // 取得當前登入用戶
-  async getCurrentUser(token: string) {
-    const response = await strapiClient.get(`${STRAPI_URL}/api/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  async getAllUsers(token: string) {
+    const { data } = await strapiClient.get("/api/users", {
+      headers: { Authorization: `Bearer ${token}` },
     });
-    return response.data;
+    return data;
   },
 
-  // 更新用戶資訊
+  async getUserById(id: string, token: string) {
+    const { data } = await strapiClient.get(`/api/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
+  async getCurrentUser(token: string) {
+    const { data } = await strapiClient.get("/api/users/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
   async updateUser(id: string, userData: any, token: string) {
-    const response = await strapiClient.put(
-      `${STRAPI_URL}/api/users/${id}`,
-      userData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
+    const { data } = await strapiClient.put(`/api/users/${id}`, userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
   },
 };
+// import axios from "axios";
+// import { AuthResponse } from "@/types/auth";
+
+// const STRAPI_URL = process.env.STRAPI_URL;
+
+// const strapiClient = axios.create({
+//   baseURL: STRAPI_URL,
+// });
+
+// /**
+//  * 註冊用戶資料型別
+//  */
+// interface RegisterUserData {
+//   username: string;
+//   email: string;
+//   password: string;
+// }
+
+// /**
+//  * 重設密碼請求資料型別
+//  */
+// interface ResetPasswordData {
+//   code: string;
+//   password: string;
+//   passwordConfirmation: string;
+// }
+
+// export const authService = {
+//   async registerUser(userData: RegisterUserData): Promise<AuthResponse> {
+//     const response = await strapiClient.post(
+//       `${STRAPI_URL}/api/auth/local/register`,
+//       userData
+//     );
+//     return response.data;
+//   },
+
+//   async sendConfirmationEmail(email: string) {
+//     const response = await strapiClient.post(
+//       `${process.env.STRAPI_URL}/api/auth/send-email-confirmation`,
+//       { email }
+//     );
+//     return response.data;
+//   },
+
+//   async loginWithStrapi(
+//     identifier: string,
+//     password: string
+//   ): Promise<AuthResponse> {
+//     const response = await strapiClient.post(`${STRAPI_URL}/api/auth/local`, {
+//       identifier,
+//       password,
+//     });
+//     return response.data;
+//   },
+
+//   async requestStrapiForgotPassword(email: string): Promise<void> {
+//     await strapiClient.post(`${STRAPI_URL}/api/auth/forgot-password`, {
+//       email: email,
+//     });
+//   },
+
+//   async requestStrapiResetPassword(body: ResetPasswordData): Promise<void> {
+//     const response = await strapiClient.post(
+//       `${STRAPI_URL}/api/auth/reset-password`,
+//       body
+//     );
+//     return response.data;
+//   },
+// };

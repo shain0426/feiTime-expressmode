@@ -3,10 +3,37 @@ import axios from "axios";
 import { geminiText } from "@/services/geminiClient";
 import type { GeminiMessage } from "@/types/gemini";
 
-// YouTube Data API v3
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
-const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search";
-const YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos";
+// --- YouTube API 內部型別定義 ---
+interface YouTubeSearchResult {
+  id: { videoId: string };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    thumbnails: {
+      high?: { url: string };
+      default?: { url: string };
+    };
+  };
+}
+
+interface YouTubeVideoDetail {
+  id: string;
+  snippet: {
+    title: string;
+    channelTitle: string;
+    thumbnails: {
+      high?: { url: string };
+      medium?: { url: string };
+      default?: { url: string };
+    };
+  };
+  statistics: {
+    viewCount: string;
+  };
+  contentDetails: {
+    duration: string;
+  };
+}
 
 interface FlavorRequest {
   flavorId: string;
@@ -22,107 +49,33 @@ interface YouTubeVideo {
   embedUrl: string;
 }
 
-interface RecommendationResponse {
-  success: boolean;
-  flavor: string;
-  recommendation: string;
-  videos: YouTubeVideo[];
-  message?: string;
-}
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search";
+const YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos";
 
 /**
- * 根據咖啡風味生成音樂推薦提示
+ * 根據咖啡風味生成音樂推薦提示 (優化關鍵字生成)
  */
 const generateMusicPrompt = (
   flavorName: string,
-  description: string
+  description: string,
 ): string => {
+  const basePrompt = `你是一位專業的咖啡音樂挑選師。請為「${flavorName}」風味的咖啡（描述：${description}）推薦適合的音樂。
+  請以繁體中文回答，並嚴格遵守以下 JSON 格式回覆：
+  {
+    "genre": "風格簡短描述",
+    "searches": ["關鍵字1", "關鍵字2", "關鍵字3", "關鍵字4"]
+  }
+  關鍵字必須是具體的：知名歌手名 + 曲風，例如 "周杰倫 告白氣球" 或 "Lauv Paris"。`;
+
   const prompts: Record<string, string> = {
-    果香: `請為「果香咖啡」推薦多元化的音樂曲風和藝術家。
-
-風味氛圍：明亮、活潑、清新、輕快
-
-請從以下類型中各推薦 1-2 個具體搜尋關鍵字（總共 6-8 個）：
-
-1. **華語流行**：例如 "周杰倫", "五月天", "林俊傑", "鄧紫棋"
-2. **日韓流行**：例如 "BTS", "TWICE", "米津玄師", "YOASOBI"
-3. **歐美流行**：例如 "Bruno Mars", "Ed Sheeran", "Maroon 5"
-4. **純音樂/鋼琴**：例如 "upbeat piano", "happy instrumental", "cheerful music box"
-5. **電影配樂**：例如 "Joe Hisaishi upbeat", "happy movie soundtrack"
-
-請以 JSON 格式回覆：
-{
-  "genre": "輕快流行與明亮純音樂",
-  "searches": ["周杰倫 陽光", "BTS dynamite", "Bruno Mars", "happy piano music", "Joe Hisaishi cheerful", "五月天 快樂"]
-}`,
-
-    花香: `請為「花香咖啡」推薦多元化的音樂曲風和藝術家。
-
-風味氛圍：優雅、細緻、柔和、療癒
-
-請從以下類型中各推薦 1-2 個具體搜尋關鍵字（總共 6-8 個）：
-
-1. **華語流行**：例如 "陳奕迅 溫柔", "孫燕姿", "梁靜茹", "A-Lin"
-2. **日韓流行**：例如 "IU ballad", "宇多田光", "AKMU", "中島美嘉"
-3. **歐美流行**：例如 "Norah Jones", "Sade", "Adele ballad"
-4. **純音樂/鋼琴**：例如 "Yiruma", "Ludovico Einaudi", "peaceful piano"
-5. **古典音樂**：例如 "Chopin nocturne", "Debussy", "Satie"
-
-請以 JSON 格式回覆：
-{
-  "genre": "優雅抒情與療癒純音樂",
-  "searches": ["孫燕姿 溫柔", "IU Through the Night", "Norah Jones", "Yiruma", "Chopin nocturne", "陳奕迅 抒情"]
-}`,
-
-    堅果: `請為「堅果風味咖啡」推薦多元化的音樂曲風和藝術家。
-
-風味氛圍：溫暖、醇厚、沉穩、舒適
-
-請從以下類型中各推薦 1-2 個具體搜尋關鍵字（總共 6-8 個）：
-
-1. **華語流行**：例如 "李榮浩", "盧廣仲", "蘇打綠", "張震嶽"
-2. **日韓流行**：例如 "星野源", "Official髭男dism", "Crush", "10cm"
-3. **歐美流行**：例如 "John Mayer", "Jack Johnson", "Ed Sheeran acoustic"
-4. **純音樂/吉他**：例如 "acoustic guitar", "warm instrumental", "cozy music"
-5. **靈魂樂/爵士**：例如 "Alicia Keys", "John Legend", "smooth jazz"
-
-請以 JSON 格式回覆：
-{
-  "genre": "溫暖民謠與舒適靈魂樂",
-  "searches": ["李榮浩 溫暖", "星野源", "John Mayer", "warm acoustic guitar", "Alicia Keys", "盧廣仲"]
-}`,
-
-    巧克力: `請為「巧克力咖啡」推薦多元化的音樂曲風和藝術家。
-
-風味氛圍：濃郁、深沉、有力量、層次豐富
-
-請從以下類型中各推薦 1-2 個具體搜尋關鍵字（總共 6-8 個）：
-
-1. **華語流行**：例如 "林宥嘉 深情", "張惠妹", "蕭敬騰", "A-Lin 高音"
-2. **日韓流行**：例如 "BLACKPINK", "Aimer", "Big Bang", "Taeyeon"
-3. **歐美流行**：例如 "Adele", "Sam Smith", "The Weeknd", "Dua Lipa"
-4. **史詩配樂**：例如 "Hiroyuki Sawano", "Hans Zimmer", "epic orchestral"
-5. **深沉古典**：例如 "Rachmaninoff", "Tchaikovsky", "powerful classical"
-
-請以 JSON 格式回覆：
-{
-  "genre": "深沉流行與史詩配樂",
-  "searches": ["張惠妹 高音", "Aimer", "Adele", "Hiroyuki Sawano", "Hans Zimmer epic", "林宥嘉 深情"]
-}`,
+    果香: `${basePrompt}\n氛圍：明亮、活潑。例如：周杰倫 陽光, BTS Dynamite, Taylor Swift Shake It Off。`,
+    花香: `${basePrompt}\n氛圍：優雅、療癒。例如：IU 抒情, Norah Jones, Bruno Mars Leave The Door Open。`,
+    堅果: `${basePrompt}\n氛圍：溫暖、沉穩。例如：李榮浩, John Mayer, Ed Sheeran Perfect。`,
+    巧克力: `${basePrompt}\n氛圍：濃郁、深沉。例如：Adele Hello, Sam Smith, Lady Gaga Always Remember Us This Way。`,
   };
 
-  return (
-    prompts[flavorName] ||
-    `請為「${flavorName}」風味咖啡（${description}）推薦多元化的音樂。
-
-請從華語、日韓、歐美流行、純音樂、古典等類型中推薦 6-8 個具體搜尋關鍵字。
-
-請以 JSON 格式回覆：
-{
-  "genre": "音樂風格描述",
-  "searches": ["search1", "search2", "search3", "search4", "search5", "search6"]
-}`
-  );
+  return prompts[flavorName] || basePrompt;
 };
 
 /**
@@ -130,315 +83,226 @@ const generateMusicPrompt = (
  */
 const getGeminiRecommendation = async (
   flavorName: string,
-  description: string
+  description: string,
 ): Promise<{ genre: string; searches: string[] }> => {
   try {
     const prompt = generateMusicPrompt(flavorName, description);
-
-    const messages: GeminiMessage[] = [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ];
+    const messages: GeminiMessage[] = [{ role: "user", content: prompt }];
 
     const responseText = await geminiText(messages, {
-      model: "gemini-2.5-flash",
-      maxRetries: 3,
+      model: "gemini-1.5-flash",
+      maxRetries: 1,
     });
 
     const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return {
-        genre: parsed.genre || "popular music",
+        genre: parsed.genre || "精選熱門音樂",
         searches: Array.isArray(parsed.searches) ? parsed.searches : [],
       };
     }
-
-    console.warn("Failed to parse Gemini response, using defaults");
-    return {
-      genre: "popular music",
-      searches: ["周杰倫", "BTS", "Ed Sheeran", "piano music", "Joe Hisaishi"],
-    };
+    throw new Error("Invalid JSON from Gemini");
   } catch (error) {
     console.error("Gemini API error:", error);
     return {
-      genre: "popular music",
-      searches: ["周杰倫", "BTS", "pop music", "piano", "OST"],
+      genre: "全球流行金曲",
+      searches: [
+        "Top Pop Hits 2024",
+        "Taylor Swift Official",
+        "Ed Sheeran Best Songs",
+      ],
     };
   }
 };
 
-/**
- * 解析 YouTube ISO 8601 duration 格式
- */
 const parseDuration = (duration: string): number => {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
-
   const hours = parseInt(match[1] || "0", 10);
   const minutes = parseInt(match[2] || "0", 10);
   const seconds = parseInt(match[3] || "0", 10);
-
   return hours * 60 + minutes + seconds / 60;
 };
 
 /**
- * 搜尋 YouTube 影片（單一關鍵字）
+ * 搜尋 YouTube 影片 (核心高品質過濾邏輯)
  */
 const searchYouTubeByKeyword = async (
   keyword: string,
-  maxResults: number = 5
+  maxResults: number = 10, // 增加抓取數量，給過濾器更多素材
 ): Promise<YouTubeVideo[]> => {
   try {
-    if (!YOUTUBE_API_KEY) {
-      throw new Error("YouTube API key is not configured");
-    }
+    if (!YOUTUBE_API_KEY) throw new Error("YouTube API key missing");
 
-    console.log(`🔍 Searching: "${keyword}"`);
-
-    const searchResponse = await axios.get(YOUTUBE_SEARCH_URL, {
-      params: {
-        part: "snippet",
-        q: keyword,
-        type: "video",
-        maxResults: maxResults * 2,
-        key: YOUTUBE_API_KEY,
-        videoCategoryId: "10",
-        order: "viewCount",
-        videoEmbeddable: "true",
-        safeSearch: "moderate",
+    const searchResponse = await axios.get<{ items: YouTubeSearchResult[] }>(
+      YOUTUBE_SEARCH_URL,
+      {
+        params: {
+          part: "snippet",
+          q: keyword,
+          type: "video",
+          maxResults, // 抓多一點來濾
+          key: YOUTUBE_API_KEY,
+          order: "viewCount", // 核心：直接叫 YouTube 給觀看最高的
+          videoCategoryId: "10",
+          videoEmbeddable: "true",
+        },
+        timeout: 5000,
       },
-    });
+    );
 
-    if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
-      return [];
-    }
+    const items = searchResponse.data.items || [];
+    if (items.length === 0) return [];
 
-    const videoIds = searchResponse.data.items
-      .map((item: any) => item.id.videoId)
-      .join(",");
-
-    const detailsResponse = await axios.get(YOUTUBE_VIDEOS_URL, {
-      params: {
-        part: "snippet,statistics,contentDetails",
-        id: videoIds,
-        key: YOUTUBE_API_KEY,
+    const videoIds = items.map((item) => item.id.videoId).join(",");
+    const detailsResponse = await axios.get<{ items: YouTubeVideoDetail[] }>(
+      YOUTUBE_VIDEOS_URL,
+      {
+        params: {
+          part: "snippet,statistics,contentDetails",
+          id: videoIds,
+          key: YOUTUBE_API_KEY,
+        },
+        timeout: 5000,
       },
-    });
+    );
 
-    if (!detailsResponse.data.items) {
-      return [];
-    }
-
-    const filtered = detailsResponse.data.items
-      .filter((item: any) => {
+    return (detailsResponse.data.items || [])
+      .filter((item) => {
         const viewCount = parseInt(item.statistics.viewCount || "0", 10);
         const duration = parseDuration(item.contentDetails.duration);
 
-        if (viewCount < 100000) return false;
-        if (duration < 2.5 || duration > 10) return false;
+        // --- 嚴格的高品質過濾條件 ---
+        const isPopular = viewCount >= 100000; // 10萬觀看以上
+        const isStandardLength = duration >= 2 && duration <= 6; // 2-6 分鐘
 
-        return true;
+        return isPopular && isStandardLength;
       })
-      .map((item: any) => ({
+      .map((item) => ({
         videoId: item.id,
         title: item.snippet.title,
         channelTitle: item.snippet.channelTitle,
         thumbnail:
           item.snippet.thumbnails.high?.url ||
-          item.snippet.thumbnails.default?.url,
+          item.snippet.thumbnails.default?.url ||
+          "",
         embedUrl: `https://www.youtube.com/embed/${item.id}?autoplay=1&rel=0`,
-        viewCount: parseInt(item.statistics.viewCount || "0", 10),
       }));
-
-    return filtered;
   } catch (error) {
-    console.error(`Error searching ${keyword}:`, error);
+    console.error(`❌ YouTube search error [${keyword}]:`, error);
     return [];
   }
 };
 
 /**
- * 從多個關鍵字搜尋並隨機選擇
- */
-const searchMultipleKeywords = async (
-  searches: string[],
-  totalResults: number = 3
-): Promise<YouTubeVideo[]> => {
-  try {
-    console.log(`🎵 Searching multiple keywords: ${searches.join(", ")}`);
-
-    // 隨機打亂順序
-    const shuffledSearches = [...searches].sort(() => 0.5 - Math.random());
-
-    const allVideos: YouTubeVideo[] = [];
-
-    // 從每個關鍵字搜尋 1-2 個影片
-    for (const search of shuffledSearches) {
-      const videos = await searchYouTubeByKeyword(search, 2);
-      allVideos.push(...videos);
-
-      if (allVideos.length >= totalResults * 4) {
-        break;
-      }
-    }
-
-    if (allVideos.length === 0) {
-      return [];
-    }
-
-    console.log(`📊 Total videos found: ${allVideos.length}`);
-
-    // 隨機打亂並選擇，確保多樣性
-    const shuffled = allVideos
-      .sort(() => 0.5 - Math.random())
-      .slice(0, totalResults);
-
-    return shuffled.map(
-      ({ videoId, title, channelTitle, thumbnail, embedUrl }) => ({
-        videoId,
-        title,
-        channelTitle,
-        thumbnail,
-        embedUrl,
-      })
-    );
-  } catch (error) {
-    console.error("Error in searchMultipleKeywords:", error);
-    return [];
-  }
-};
-
-/**
- * 主要的推薦控制器
+ * 主要推薦控制器
  */
 export const flavorMusicHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const { flavorId, flavorName, description } = req.body as FlavorRequest;
-
+    const { flavorName, description } = req.body as FlavorRequest;
     if (!flavorName) {
-      res.status(400).json({
-        success: false,
-        message: "請提供風味名稱",
-      });
+      res.status(400).json({ success: false, message: "請提供風味名稱" });
       return;
     }
 
-    console.log(`🎵 Processing music recommendation for flavor: ${flavorName}`);
+    const geminiRec = await getGeminiRecommendation(
+      flavorName,
+      description || "",
+    );
 
-    // 1. 使用 Gemini 生成多元化的搜尋關鍵字
-    const geminiRec = await getGeminiRecommendation(flavorName, description);
-    console.log(`🤖 Gemini recommendation:`, geminiRec);
+    // 1. 嘗試根據 AI 關鍵字搜尋
+    let videos = await searchMultipleKeywords(geminiRec.searches, 3);
 
-    // 2. 從多個關鍵字搜尋並隨機選擇
-    const videos = await searchMultipleKeywords(geminiRec.searches, 5);
-
+    // 2. 如果因為過濾太嚴格找不到，自動執行「保底策略」
     if (videos.length === 0) {
-      res.status(200).json({
-        success: false,
-        message: "暫時無法找到符合條件的音樂，請稍後再試",
-        flavor: flavorName,
-        recommendation: geminiRec.genre,
-        videos: [],
-      });
-      return;
+      console.warn(
+        `[Fallback] No strict results for ${flavorName}, searching broad keywords...`,
+      );
+      // 使用更廣泛但保證有高流量的關鍵字
+      const fallbackKeywords = [
+        `${flavorName} coffee shop music`,
+        `${geminiRec.genre} hits`,
+      ];
+      for (const kw of fallbackKeywords) {
+        const fallbackResults = await searchYouTubeByKeyword(kw, 10);
+        if (fallbackResults.length > 0) {
+          videos = fallbackResults.slice(0, 3);
+          break;
+        }
+      }
     }
-
-    // 3. 隨機選擇 3 個影片
-    const shuffled = [...videos].sort(() => 0.5 - Math.random());
-    const selectedVideos = shuffled.slice(0, 3);
-
-    console.log(`✅ Returning ${selectedVideos.length} videos`);
-
-    // 4. 回傳結果
-    const response: RecommendationResponse = {
-      success: true,
-      flavor: flavorName,
-      recommendation: `為您推薦 ${geminiRec.genre}`,
-      videos: selectedVideos,
-    };
-
-    res.status(200).json(response);
-  } catch (error) {
-    console.error("❌ Recommendation error:", error);
-    res.status(500).json({
-      success: false,
-      message: "推薦系統暫時無法使用，請稍後再試",
-    });
-  }
-};
-
-/**
- * 取得隨機推薦（用於 Next 按鈕）
- */
-export const randomMusicHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { currentFlavorName } = req.body;
-
-    if (!currentFlavorName) {
-      res.status(400).json({
-        success: false,
-        message: "請先選擇風味",
-      });
-      return;
-    }
-
-    console.log(`🔄 Getting random music for flavor: ${currentFlavorName}`);
-
-    // 重新生成推薦（會得到不同的隨機結果）
-    const geminiRec = await getGeminiRecommendation(currentFlavorName, "");
-    const videos = await searchMultipleKeywords(geminiRec.searches, 5);
-
-    if (videos.length === 0) {
-      res.status(200).json({
-        success: false,
-        message: "暫時無法找到更多音樂",
-        videos: [],
-      });
-      return;
-    }
-
-    const shuffled = [...videos].sort(() => 0.5 - Math.random());
-    const selectedVideos = shuffled.slice(0, 3);
 
     res.status(200).json({
       success: true,
-      videos: selectedVideos,
-      recommendation: `為您找到更多 ${currentFlavorName} 風味的音樂`,
+      flavor: flavorName,
+      recommendation:
+        videos.length > 0
+          ? `為您推薦 ${geminiRec.genre}`
+          : "為您推薦熱門經典音樂",
+      videos: videos,
     });
   } catch (error) {
-    console.error("❌ Random recommendation error:", error);
-    res.status(500).json({
-      success: false,
-      message: "無法取得推薦",
-    });
+    console.error(`❌ Handler error:`, error);
+    res.status(500).json({ success: false, message: "系統繁忙" });
   }
 };
 
 /**
- * 健康檢查端點
+ * 取得隨機推薦 (Next 按鈕)
  */
-export const musicHealthCheck = async (
+export const randomMusicHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
-  const hasGeminiKey = !!process.env.GEMINI_API_KEY;
-  const hasYouTubeKey = !!process.env.YOUTUBE_API_KEY;
+  try {
+    const { currentFlavorName } = req.body as { currentFlavorName: string };
+    const geminiRec = await getGeminiRecommendation(
+      currentFlavorName || "經典",
+      "refresh",
+    );
+    const videos = await searchMultipleKeywords(geminiRec.searches, 3);
 
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    services: {
-      gemini: hasGeminiKey ? "configured" : "missing_api_key",
-      youtube: hasYouTubeKey ? "configured" : "missing_api_key",
-    },
+    res.status(200).json({
+      success: true,
+      videos,
+      recommendation: `換一批 ${currentFlavorName || ""} 系列`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "無法更新推薦" });
+  }
+};
+
+/**
+ * 內部輔助方法：處理多個關鍵字
+ */
+async function searchMultipleKeywords(
+  searches: string[],
+  totalResults: number,
+): Promise<YouTubeVideo[]> {
+  const allVideos: YouTubeVideo[] = [];
+  // 為了效能，我們只拿前 2 個關鍵字來深入搜尋
+  const results = await Promise.allSettled(
+    searches.slice(0, 2).map((k) => searchYouTubeByKeyword(k, 10)),
+  );
+
+  results.forEach((res) => {
+    if (res.status === "fulfilled") allVideos.push(...res.value);
   });
+
+  // 去重並隨機排序
+  const uniqueVideos = Array.from(
+    new Map(allVideos.map((v) => [v.videoId, v])).values(),
+  );
+  return uniqueVideos.sort(() => 0.5 - Math.random()).slice(0, totalResults);
+}
+
+export const musicHealthCheck = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  res.status(200).json({ status: "ok" });
 };

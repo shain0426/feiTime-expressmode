@@ -114,7 +114,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
       });
     }
 
-    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 documentId )
+    // 用前端傳來的 order_number 去資料庫查詢訂單（取得 id )
     const orders = await fetchStrapiData("orders", "*", 1, 1, {
       filters: {
         order_number: { $eq: order_number },
@@ -133,15 +133,14 @@ export async function updateOrderHandler(req: Request, res: Response) {
     // 診斷日誌
     console.log("📋 訂單資料:", {
       id: order.id,
-      documentId: order.documentId,
       order_number: order.order_number,
     });
 
-    // 檢查 documentId 是否存在
-    if (!order.documentId) {
-      console.error("❌ 警告：documentId 不存在，訂單資料:", order);
+    // 檢查 id 是否存在
+    if (!order.id) {
+      console.error("❌ 警告：id 不存在，訂單資料:", order);
       return res.status(500).json({
-        error: "訂單缺少 documentId",
+        error: "訂單缺少 id",
         order: order,
       });
     }
@@ -153,12 +152,10 @@ export async function updateOrderHandler(req: Request, res: Response) {
       order_status: "shipped",
     };
 
-    // 用 documentId  更新訂單（真正修改），必須用 documentId （Strapi API 限制）
-    const updatedOrder = await updateStrapiData(
-      "orders",
-      order.documentId,
-      updateData,
-    );
+    // 用 id 更新訂單（真正修改），必須用 id （Strapi API 限制）
+    const updatedOrder = await updateStrapiData("orders", order.id, {
+      data: updateData,
+    });
 
     // 更新成功 → 回傳給前端
     res.json({
