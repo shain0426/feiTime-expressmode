@@ -22,40 +22,6 @@ interface YouTubeVideo {
   embedUrl: string;
 }
 
-interface YouTubeSearchItem {
-  id: {
-    videoId: string;
-  };
-}
-
-interface YouTubeVideoSnippet {
-  title: string;
-  channelTitle: string;
-  thumbnails: {
-    high?: {
-      url: string;
-    };
-    default?: {
-      url: string;
-    };
-  };
-}
-
-interface YouTubeVideoStatistics {
-  viewCount?: string;
-}
-
-interface YouTubeVideoContentDetails {
-  duration: string;
-}
-
-interface YouTubeVideoItem {
-  id: string;
-  snippet: YouTubeVideoSnippet;
-  statistics: YouTubeVideoStatistics;
-  contentDetails: YouTubeVideoContentDetails;
-}
-
 interface RecommendationResponse {
   success: boolean;
   flavor: string;
@@ -69,7 +35,7 @@ interface RecommendationResponse {
  */
 const generateMusicPrompt = (
   flavorName: string,
-  description: string
+  description: string,
 ): string => {
   const prompts: Record<string, string> = {
     果香: `請為「果香咖啡」推薦多元化的音樂曲風和藝術家。
@@ -164,7 +130,7 @@ const generateMusicPrompt = (
  */
 const getGeminiRecommendation = async (
   flavorName: string,
-  description: string
+  description: string,
 ): Promise<{ genre: string; searches: string[] }> => {
   try {
     const prompt = generateMusicPrompt(flavorName, description);
@@ -223,7 +189,7 @@ const parseDuration = (duration: string): number => {
  */
 const searchYouTubeByKeyword = async (
   keyword: string,
-  maxResults: number = 5
+  maxResults: number = 5,
 ): Promise<YouTubeVideo[]> => {
   try {
     if (!YOUTUBE_API_KEY) {
@@ -251,7 +217,7 @@ const searchYouTubeByKeyword = async (
     }
 
     const videoIds = searchResponse.data.items
-      .map((item: YouTubeSearchItem) => item.id.videoId)
+      .map((item: any) => item.id.videoId)
       .join(",");
 
     const detailsResponse = await axios.get(YOUTUBE_VIDEOS_URL, {
@@ -267,7 +233,7 @@ const searchYouTubeByKeyword = async (
     }
 
     const filtered = detailsResponse.data.items
-      .filter((item: YouTubeVideoItem) => {
+      .filter((item: any) => {
         const viewCount = parseInt(item.statistics.viewCount || "0", 10);
         const duration = parseDuration(item.contentDetails.duration);
 
@@ -276,14 +242,14 @@ const searchYouTubeByKeyword = async (
 
         return true;
       })
-      .map((item: YouTubeVideoItem) => ({
+      .map((item: any) => ({
         videoId: item.id,
         title: item.snippet.title,
         channelTitle: item.snippet.channelTitle,
         thumbnail:
           item.snippet.thumbnails.high?.url ||
           item.snippet.thumbnails.default?.url,
-        embedUrl: `https://www.youtube.com/embed/${item.id}?enablejsapi=1&autoplay=0&rel=0&modestbranding=1`,
+        embedUrl: `https://www.youtube.com/embed/${item.id}?autoplay=1&rel=0`,
         viewCount: parseInt(item.statistics.viewCount || "0", 10),
       }));
 
@@ -299,7 +265,7 @@ const searchYouTubeByKeyword = async (
  */
 const searchMultipleKeywords = async (
   searches: string[],
-  totalResults: number = 3
+  totalResults: number = 3,
 ): Promise<YouTubeVideo[]> => {
   try {
     console.log(`🎵 Searching multiple keywords: ${searches.join(", ")}`);
@@ -337,7 +303,7 @@ const searchMultipleKeywords = async (
         channelTitle,
         thumbnail,
         embedUrl,
-      })
+      }),
     );
   } catch (error) {
     console.error("Error in searchMultipleKeywords:", error);
@@ -350,10 +316,10 @@ const searchMultipleKeywords = async (
  */
 export const flavorMusicHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    const { flavorName, description } = req.body as FlavorRequest;
+    const { flavorId, flavorName, description } = req.body as FlavorRequest;
 
     if (!flavorName) {
       res.status(400).json({
@@ -412,7 +378,7 @@ export const flavorMusicHandler = async (
  */
 export const randomMusicHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { currentFlavorName } = req.body;
@@ -462,7 +428,7 @@ export const randomMusicHandler = async (
  */
 export const musicHealthCheck = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const hasGeminiKey = !!process.env.GEMINI_API_KEY;
   const hasYouTubeKey = !!process.env.YOUTUBE_API_KEY;
