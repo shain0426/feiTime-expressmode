@@ -283,7 +283,7 @@ const searchYouTubeByKeyword = async (
         thumbnail:
           item.snippet.thumbnails.high?.url ||
           item.snippet.thumbnails.default?.url,
-        embedUrl: `https://www.youtube.com/embed/${item.id}?autoplay=1&rel=0`,
+        embedUrl: `https://www.youtube.com/embed/${item.id}?enablejsapi=1&autoplay=0&rel=0&modestbranding=1`,
         viewCount: parseInt(item.statistics.viewCount || "0", 10),
       }));
 
