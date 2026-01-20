@@ -40,12 +40,13 @@ export async function geminiText(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // 將所有訊息組合成單一字串
+      const prompt = messages.map((msg) => msg.content).join("\n\n");
+
       const response: GenerateContentResponse = await ai.models.generateContent(
         {
           model,
-          contents: messages.map(
-            (msg) => `${msg.role.toUpperCase()}: ${msg.content}`
-          ),
+          contents: prompt,
         }
       );
       return response.text ?? "";

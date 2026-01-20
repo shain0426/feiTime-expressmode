@@ -22,6 +22,40 @@ interface YouTubeVideo {
   embedUrl: string;
 }
 
+interface YouTubeSearchItem {
+  id: {
+    videoId: string;
+  };
+}
+
+interface YouTubeVideoSnippet {
+  title: string;
+  channelTitle: string;
+  thumbnails: {
+    high?: {
+      url: string;
+    };
+    default?: {
+      url: string;
+    };
+  };
+}
+
+interface YouTubeVideoStatistics {
+  viewCount?: string;
+}
+
+interface YouTubeVideoContentDetails {
+  duration: string;
+}
+
+interface YouTubeVideoItem {
+  id: string;
+  snippet: YouTubeVideoSnippet;
+  statistics: YouTubeVideoStatistics;
+  contentDetails: YouTubeVideoContentDetails;
+}
+
 interface RecommendationResponse {
   success: boolean;
   flavor: string;
@@ -217,7 +251,7 @@ const searchYouTubeByKeyword = async (
     }
 
     const videoIds = searchResponse.data.items
-      .map((item: any) => item.id.videoId)
+      .map((item: YouTubeSearchItem) => item.id.videoId)
       .join(",");
 
     const detailsResponse = await axios.get(YOUTUBE_VIDEOS_URL, {
@@ -233,7 +267,7 @@ const searchYouTubeByKeyword = async (
     }
 
     const filtered = detailsResponse.data.items
-      .filter((item: any) => {
+      .filter((item: YouTubeVideoItem) => {
         const viewCount = parseInt(item.statistics.viewCount || "0", 10);
         const duration = parseDuration(item.contentDetails.duration);
 
@@ -242,7 +276,7 @@ const searchYouTubeByKeyword = async (
 
         return true;
       })
-      .map((item: any) => ({
+      .map((item: YouTubeVideoItem) => ({
         videoId: item.id,
         title: item.snippet.title,
         channelTitle: item.snippet.channelTitle,
@@ -319,7 +353,7 @@ export const flavorMusicHandler = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { flavorId, flavorName, description } = req.body as FlavorRequest;
+    const { flavorName, description } = req.body as FlavorRequest;
 
     if (!flavorName) {
       res.status(400).json({
