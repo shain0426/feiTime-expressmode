@@ -154,3 +154,19 @@ export const strapiPut = async (table: string, dataObj: any, id: string) => {
     throw new Error(err.response?.data?.error?.message || "資料新增失敗");
   }
 };
+
+export const productsPut = async (table: string, dataObj: any, id: string) => {
+  try {
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};

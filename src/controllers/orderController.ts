@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
-import { fetchStrapiData, strapiPost, strapiPut } from "@/services/dataService";
+import {
+  fetchStrapiData,
+  strapiPost,
+  strapiPut,
+  productsPut,
+} from "@/services/dataService";
 import axios from "axios";
 import dotenv from "dotenv";
 
@@ -64,9 +69,9 @@ export const orderUpdate = async (req: Request, res: Response) => {
     const id = req.params.id.toString();
     const updateBody = req.body;
 
-    console.log("看資料");
-    console.log(id);
-    console.log(updateBody);
+    // console.log("看資料");
+    // console.log(id);
+    // console.log(updateBody);
 
     const result = await strapiPut("orders", updateBody, id);
     console.log(result.data);
@@ -90,3 +95,21 @@ export async function productsGet(req: Request, res: Response) {
     });
   }
 }
+
+export const productsUpdate = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id.toString();
+    const updateBody = req.body;
+
+    console.log("檢查產品put的參數");
+    console.log(id);
+    console.log(updateBody);
+
+    const result = await productsPut("products", updateBody, id);
+    console.log(result.data);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("PUT錯誤", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};

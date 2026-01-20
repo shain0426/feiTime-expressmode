@@ -29,6 +29,7 @@ import {
   orderGet,
   orderUpdate,
   productsGet,
+  productsUpdate,
 } from "@/controllers/orderController";
 
 const router = Router();
@@ -57,6 +58,7 @@ router.post("/orders/checkout", orderCome); // 前端送訂單來
 router.get("/order/giveme", orderGet);
 router.put("/orders/:id", orderUpdate);
 router.get("/products/get", productsGet);
+router.put("/products/:id", productsUpdate);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
