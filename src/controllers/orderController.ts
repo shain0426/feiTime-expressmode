@@ -98,7 +98,7 @@ export async function productsGet(req: Request, res: Response) {
 
 export const productsUpdate = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id.toString();
+    const id = req.params.id;
     const updateBody = req.body;
 
     console.log("檢查產品put的參數");
@@ -107,9 +107,12 @@ export const productsUpdate = async (req: Request, res: Response) => {
 
     const result = await productsPut("products", updateBody, id);
     console.log(result.data);
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (err: any) {
-    console.error("PUT錯誤", err.message);
-    res.status(500).json({ error: err.message });
+    const statusCode = err.response?.status || 500;
+    const errorMessage = err.response?.data?.error?.message || err.message;
+
+    console.error("PUT 錯誤:", errorMessage);
+    res.status(statusCode).json({ detail: errorMessage });
   }
 };
