@@ -44,7 +44,7 @@ export type StrapiFilters = Record<
   | StrapiFilterOperator
   | string
   | number
-  | Record<string, StrapiFilterOperator | string | number>  // 支援巢狀關聯欄位 (如 user.id)
+  | Record<string, StrapiFilterOperator | string | number> // 支援巢狀關聯欄位 (如 user.id)
 >;
 
 /**
@@ -68,8 +68,8 @@ export const fetchStrapiData = async (
     fields?: string[];
     filters?: StrapiFilters;
     sort?: string[];
-    populate?: string[];  // 新增：指定要展開的關聯
-  }
+    populate?: string[]; // 新增：指定要展開的關聯
+  },
 ) => {
   try {
     // 初始化 params，放基本的分頁與 populate 設定
@@ -127,7 +127,7 @@ export const fetchStrapiData = async (
 
     // 使用 upstream 改進的 queryString 處理
     const queryString = new URLSearchParams(
-      Object.entries(params).map(([key, value]) => [key, String(value)])
+      Object.entries(params).map(([key, value]) => [key, String(value)]),
     ).toString();
     const fullUrl = `${strapiClient.defaults.baseURL}/api/${collectionName}?${queryString}`;
     console.log("🔍 FULL REQUEST URL:", fullUrl);
@@ -177,7 +177,7 @@ export const postStrapiData = async (collectionName: string, data: any) => {
 export const putStrapiData = async (
   collectionName: string,
   documentId: string,
-  data: any
+  data: any,
 ) => {
   try {
     const res = await strapiClient.put(`/api/${collectionName}/${documentId}`, {
@@ -200,7 +200,7 @@ export const putStrapiData = async (
  */
 export const createStrapiData = async (
   collectionName: string,
-  payload: { data: Record<string, unknown> }
+  payload: { data: Record<string, unknown> },
 ) => {
   try {
     console.log(`📝 Creating data in ${collectionName}:`, payload);
@@ -231,7 +231,7 @@ export const createStrapiData = async (
 export const updateStrapiData = async (
   collectionName: string,
   id: number | string,
-  payload: { data: Record<string, unknown> }
+  payload: { data: Record<string, unknown> },
 ) => {
   try {
     console.log(`✏️ Updating ${collectionName} #${id}:`, payload);
@@ -260,7 +260,7 @@ export const updateStrapiData = async (
  */
 export const deleteStrapiData = async (
   collectionName: string,
-  id: number | string
+  id: number | string,
 ) => {
   try {
     console.log(`🗑️ Deleting ${collectionName} #${id}`);
@@ -277,5 +277,74 @@ export const deleteStrapiData = async (
 
     const errorMessage = errorObj.message || "Delete request failed";
     throw new Error(errorMessage);
+  }
+};
+
+/**
+ * 公版函式：新增資料到 Strapi
+ * @param table - Strapi table 名稱，例如 "products"
+ * @param dataObj - 要存入的資料物件
+ */
+export const strapiPost = async (table: string, dataObj: any) => {
+  try {
+    // Strapi 的規範：所有欄位必須放在 "data" 層級下
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.post(`/api/${table}`, body);
+
+    console.log(`✅ ${table} 新增成功:`, res.data);
+
+    // Strapi 回傳通常也會包在 data 欄位裡
+    return res.data?.data ?? null;
+  } catch (err: any) {
+    // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
+    console.error("❌ Strapi POST Error:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const strapiPut = async (table: string, dataObj: any, id: string) => {
+  try {
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const productsPut = async (table: string, dataObj: any, id: string) => {
+  try {
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const cartsDelete = async (table: string, id: string) => {
+  try {
+    const res = await strapiClient.delete(`/api/${table}/${id}`);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
   }
 };

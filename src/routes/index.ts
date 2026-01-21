@@ -8,7 +8,10 @@ import {
   recommendProductsHandler,
 } from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
-import { getRefineAdvice, getRefineReport } from "@/controllers/refineAiController";
+import {
+  getRefineAdvice,
+  getRefineReport,
+} from "@/controllers/refineAiController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
   flavorMusicHandler,
@@ -26,6 +29,15 @@ import { loginController } from "../controllers/loginController";
 import * as authController from "@/controllers/authController";
 import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
 import googleAuthController from "../controllers/googleAuthController";
+import {
+  getCarts,
+  orderCome,
+  orderGet,
+  orderUpdate,
+  productsGet,
+  productsUpdate,
+  deleteCarts,
+} from "@/controllers/orderController";
 
 const router = Router();
 
@@ -51,6 +63,13 @@ router.get("/product-detail/:pid/recommendations", recommendProductsHandler); //
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
+router.get("/get-cart", getCarts);
+router.post("/orders/checkout", orderCome);
+router.get("/order/giveme", orderGet);
+router.put("/orders/:id", orderUpdate);
+router.get("/products/get", productsGet);
+router.put("/products/:id", productsUpdate);
+router.delete("/cart-items/:id", deleteCarts);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
