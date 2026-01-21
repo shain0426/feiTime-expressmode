@@ -13,10 +13,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-//允許前端跨域請求
+//允許前端跨域請求 (支援本地開發和正式環境)
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // 允許沒有 origin 的請求（如 Postman 或伺服器間請求）
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -35,7 +49,47 @@ app.use("/api", routes);
 // google 註冊的route
 app.use("/api", googleAuthRouter);
 
+//分享功能的route
+app.get("/share", (req, res) => {
+  console.log("收到分享請求！參數：", req.query);
+  res.setHeader("ngrok-skip-browser-warning", "true");
+  const { name, img } = req.query;
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  if (!name || !img || img === "undefined") {
+    return res.redirect(frontendUrl);
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+      <meta charset="UTF-8">
+      <title>Coffee ID - ${name}</title>
+      
+      <meta property="og:title" content="我的咖啡風格是：${name}，快來FeiTime Coffee一起測一測！">
+      <meta property="og:image" content="${img}">
+      <meta property="og:type" content="website">
+
+      <script>
+        window.location.href = "${frontendUrl}/#/coffee-result?persona=${encodeURIComponent(name as string)}";
+      </script>
+    </head>
+    <body>
+      <div style="display:flex; justify-content:center; align-items:center; height:100vh;">
+        <p>正在載入 ${name} 的 Coffee ID...</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  res.send(htmlContent);
+});
+
 //啟動 server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+  // DEBUG: Prevent process from exiting if event loop is empty (防呆用)
+  setInterval(() => { }, 60000);
 });

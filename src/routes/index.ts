@@ -8,6 +8,10 @@ import {
   recommendProductsHandler,
 } from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
+import {
+  getRefineAdvice,
+  getRefineReport,
+} from "@/controllers/refineAiController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
   flavorMusicHandler,
@@ -39,6 +43,8 @@ const router = Router();
 // === Gemini AI 相關 ===
 // router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
+router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
+router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
 
 // === 首頁-風味音樂推薦系統 ===
 router.post("/music/flavor", flavorMusicHandler); // 根據風味推薦音樂
@@ -78,15 +84,32 @@ router.post(
   emailActionLimiter,
   authController.resetPassword,
 );
-router.get(
-  "/auth/google/callback",
-  googleAuthController.handleGoogleCallback.bind(googleAuthController),
-);
 
 // User相關
 router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
 router.get("/admin-users", userController.getAllUsers); // 使用者資訊
 router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
 router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
+
+// === Google OAuth ===
+router.get(
+  "/api/auth/google/callback",
+  googleAuthController.handleGoogleCallback,
+);
+
+// === 購物車相關 ===
+import {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeCartItem,
+  clearUserCart,
+} from "@/controllers/cartController";
+
+router.get("/cart", getCart);
+router.post("/cart", addToCart);
+router.put("/cart/:documentId", updateCartItem);
+router.delete("/cart/:documentId", removeCartItem);
+router.delete("/cart", clearUserCart);
 
 export default router;

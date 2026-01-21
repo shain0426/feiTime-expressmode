@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import axios from "axios";
 import { geminiText } from "@/services/geminiClient";
 import type { GeminiMessage } from "@/types/gemini";
+import { handleError } from "@/utils/errorHandler";
 
 // --- YouTube API 內部型別定義 ---
 interface YouTubeSearchResult {
@@ -246,8 +247,7 @@ export const flavorMusicHandler = async (
       videos: videos,
     });
   } catch (error) {
-    console.error(`❌ Handler error:`, error);
-    res.status(500).json({ success: false, message: "系統繁忙" });
+    handleError(error, res, "系統繁忙，請稍後再試");
   }
 };
 
@@ -272,7 +272,7 @@ export const randomMusicHandler = async (
       recommendation: `換一批 ${currentFlavorName || ""} 系列`,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "無法更新推薦" });
+    handleError(error, res, "無法更新推薦，請稍後再試");
   }
 };
 

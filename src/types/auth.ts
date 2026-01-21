@@ -11,6 +11,18 @@ export interface User {
   };
 }
 
+export interface RegisterInput {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface ResetPasswordInput {
+  code: string;
+  password: string;
+  passwordConfirmation: string;
+}
+
 export interface AuthResponse {
   jwt: string;
   user: User;
