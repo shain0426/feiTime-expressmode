@@ -36,6 +36,15 @@ import { userController } from "@/controllers/adminUserController";
 import { requireAdmin } from "@/middlewares/requireAdmin";
 import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
 import googleAuthController from "../controllers/googleAuthController";
+import {
+  getCarts,
+  orderCome,
+  orderGet,
+  orderUpdate,
+  productsGet,
+  productsUpdate,
+  deleteCarts,
+} from "@/controllers/orderController";
 
 const router = Router();
 
@@ -64,6 +73,13 @@ router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 
 router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
+router.get("/get-cart", getCarts);
+router.post("/orders/checkout", orderCome);
+router.get("/order/giveme", orderGet);
+router.put("/orders/:id", orderUpdate);
+router.get("/products/get", productsGet);
+router.put("/products/:id", productsUpdate);
+router.delete("/cart-items/:id", deleteCarts);
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);

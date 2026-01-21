@@ -280,23 +280,71 @@ export const deleteStrapiData = async (
   }
 };
 
-// // 修改內容
-// export async function updateStrapiData(
-//   contentType: string,
-//   documentId: string,
-//   data: any,
-// ) {
-//   try {
-//     const res = await strapiClient.put(`/api/${contentType}/${documentId}`, {
-//       data, // Strapi 要求包在 data 裡
-//     });
+/**
+ * 公版函式：新增資料到 Strapi
+ * @param table - Strapi table 名稱，例如 "products"
+ * @param dataObj - 要存入的資料物件
+ */
+export const strapiPost = async (table: string, dataObj: any) => {
+  try {
+    // Strapi 的規範：所有欄位必須放在 "data" 層級下
+    const body = {
+      data: dataObj,
+    };
 
-//     return res.data?.data;
-//   } catch (error: any) {
-//     console.error(
-//       `[updateStrapiData] ${contentType}/${documentId} 更新失敗:`,
-//       error,
-//     );
-//     throw error;
-//   }
-// }
+    const res = await strapiClient.post(`/api/${table}`, body);
+
+    console.log(`✅ ${table} 新增成功:`, res.data);
+
+    // Strapi 回傳通常也會包在 data 欄位裡
+    return res.data?.data ?? null;
+  } catch (err: any) {
+    // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
+    console.error("❌ Strapi POST Error:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const strapiPut = async (table: string, dataObj: any, id: string) => {
+  try {
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const productsPut = async (table: string, dataObj: any, id: string) => {
+  try {
+    const body = {
+      data: dataObj,
+    };
+
+    const res = await strapiClient.put(`/api/${table}/${id}`, body);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
+
+export const cartsDelete = async (table: string, id: string) => {
+  try {
+    const res = await strapiClient.delete(`/api/${table}/${id}`);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};
