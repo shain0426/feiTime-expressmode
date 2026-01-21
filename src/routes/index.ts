@@ -33,6 +33,7 @@ import {
   updateOrderHandler,
 } from "@/controllers/adminOrderController";
 import { userController } from "@/controllers/adminUserController";
+import { requireAdmin } from "@/middlewares/requireAdmin";
 import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
 import googleAuthController from "../controllers/googleAuthController";
 
@@ -58,10 +59,10 @@ router.get("/product-detail", productDetailHandler); // 產品詳細資訊
 router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細資訊
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
-router.get("/admin-orders", orderListHandler); // 訂單資訊
-router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
+router.get("/admin-orders", requireAdmin, orderListHandler); // 訂單資訊
+router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 單一訂單資訊
+router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
-router.put("/admin-orders/:order_number", updateOrderHandler); // 更新單一訂單運送資訊
 router.post("/coffee-results", saveCoffeeResultHandler);
 
 // === 註冊相關 ===
@@ -87,9 +88,13 @@ router.post(
 
 // User相關
 router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
-router.get("/admin-users", userController.getAllUsers); // 使用者資訊
-router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
-router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
+router.get("/admin-users", requireAdmin, userController.getAllUsers); // 使用者資訊
+router.get("/admin-users/:id", requireAdmin, userController.getUserById); // 單一使用者資訊
+router.put("/admin-users/:id", requireAdmin, userController.updateUser); // 更新單一使用者資訊
+// router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
+// router.get("/admin-users", userController.getAllUsers); // 使用者資訊
+// router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
+// router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
 
 // === Google OAuth ===
 router.get(
