@@ -137,71 +137,160 @@ function extractPreferencesFromHistory(
     .join(" ")
     .toLowerCase();
 
-  // 提取風味偏好
+  // 提取風味偏好（支援多種說法）
   if (
     allText.includes("果") ||
-    allText.includes("酸") ||
-    allText.includes("fruity")
+    allText.includes("莓") ||
+    allText.includes("柑橘") ||
+    allText.includes("檸檬") ||
+    allText.includes("酸甜") ||
+    allText.includes("fruity") ||
+    allText.match(/第\s*[一1]/) || // 選第一個選項
+    allText.includes("1")
   ) {
     prefs.flavorCategory = "fruity";
   } else if (
     allText.includes("花") ||
     allText.includes("香") ||
-    allText.includes("floral")
+    allText.includes("茉莉") ||
+    allText.includes("玫瑰") ||
+    allText.includes("清新") ||
+    allText.includes("floral") ||
+    allText.match(/第\s*[二2]/) ||
+    allText === "2"
   ) {
     prefs.flavorCategory = "floral";
   } else if (
     allText.includes("堅果") ||
     allText.includes("巧克力") ||
+    allText.includes("焦糖") ||
+    allText.includes("可可") ||
     allText.includes("平衡") ||
-    allText.includes("nutty")
+    allText.includes("溫和") ||
+    allText.includes("nutty") ||
+    allText.match(/第\s*[三3]/) ||
+    allText === "3"
   ) {
     prefs.flavorCategory = "nutty";
   } else if (
     allText.includes("濃") ||
     allText.includes("厚") ||
     allText.includes("苦") ||
-    allText.includes("bold")
+    allText.includes("重") ||
+    allText.includes("煙燻") ||
+    allText.includes("強烈") ||
+    allText.includes("bold") ||
+    allText.match(/第\s*[四4]/) ||
+    allText === "4"
   ) {
     prefs.flavorCategory = "bold";
   }
 
-  // 提取酸度偏好
-  if (allText.includes("高酸") || allText.includes("明亮")) {
+  // 提取酸度偏好（支援多種說法）
+  if (
+    allText.includes("高酸") ||
+    allText.includes("明亮") ||
+    allText.includes("酸一點") ||
+    allText.includes("喜歡酸") ||
+    allText.includes("要酸") ||
+    allText.includes("愛酸")
+  ) {
     prefs.acidity = "high";
-  } else if (allText.includes("低酸") || allText.includes("不酸")) {
+  } else if (
+    allText.includes("低酸") ||
+    allText.includes("不酸") ||
+    allText.includes("不要酸") ||
+    allText.includes("少酸") ||
+    allText.includes("怕酸") ||
+    allText.includes("不喜歡酸") ||
+    allText.includes("不愛酸")
+  ) {
     prefs.acidity = "low";
-  } else if (allText.includes("中酸") || allText.includes("適中")) {
+  } else if (
+    allText.includes("中酸") ||
+    allText.includes("適中") ||
+    allText.includes("普通") ||
+    allText.includes("一般") ||
+    allText.includes("都可以") ||
+    allText.includes("沒關係")
+  ) {
     prefs.acidity = "medium";
   }
 
-  // 提取價格偏好
-  const priceMatch = allText.match(/(\d+)\s*[元塊]/);
-  if (priceMatch) {
+  // 提取價格偏好（支援多種說法）
+  const priceMatch = allText.match(/(\d+)\s*[元塊]?(?:以內|左右|上下)?/);
+  if (priceMatch && Number(priceMatch[1]) >= 100) {
     prefs.price = { budget: Number(priceMatch[1]) };
-  } else if (allText.includes("便宜") || allText.includes("平價")) {
+  } else if (
+    allText.includes("便宜") ||
+    allText.includes("平價") ||
+    allText.includes("經濟") ||
+    allText.includes("划算") ||
+    allText.includes("省錢") ||
+    allText.includes("學生")
+  ) {
     prefs.price = { max: 500 };
-  } else if (allText.includes("頂級") || allText.includes("高級")) {
+  } else if (
+    allText.includes("頂級") ||
+    allText.includes("高級") ||
+    allText.includes("精品") ||
+    allText.includes("最好") ||
+    allText.includes("貴一點") ||
+    allText.includes("不限預算")
+  ) {
     prefs.price = { min: 1000 };
+  } else if (
+    allText.includes("中等") ||
+    allText.includes("中價") ||
+    allText.includes("普通價")
+  ) {
+    prefs.price = { min: 400, max: 800 };
   }
 
-  // 提取烘焙度
-  if (allText.includes("淺焙")) {
+  // 提取烘焙度（支援多種說法）
+  if (
+    allText.includes("淺焙") ||
+    allText.includes("淺烘") ||
+    allText.match(/(?:^|[^中深])淺(?:$|[^焙烘])/) ||
+    allText.includes("light")
+  ) {
     prefs.roast = "Light";
-  } else if (allText.includes("中焙")) {
+  } else if (
+    allText.includes("中焙") ||
+    allText.includes("中烘") ||
+    allText.match(/(?:^|[^淺深])中(?:$|[^焙烘])/) ||
+    allText.includes("medium")
+  ) {
     prefs.roast = "Medium";
-  } else if (allText.includes("深焙")) {
+  } else if (
+    allText.includes("深焙") ||
+    allText.includes("深烘") ||
+    allText.match(/(?:^|[^淺中])深(?:$|[^焙烘])/) ||
+    allText.includes("dark")
+  ) {
     prefs.roast = "Dark";
   }
 
-  // 提取產地
+  // 提取產地（根據實際產品資料）
   const origins = [
-    { english: "Ethiopia", chinese: ["衣索比亞", "埃塞俄比亞"] },
+    // 非洲產區
+    { english: "Ethiopia", chinese: ["衣索比亞", "埃塞俄比亞", "衣索", "耶加", "古吉", "西達摩", "哈拉"] },
     { english: "Kenya", chinese: ["肯亞", "肯尼亞"] },
-    { english: "Colombia", chinese: ["哥倫比亞"] },
+    { english: "Rwanda", chinese: ["盧安達", "盧旺達"] },
+    { english: "Burundi", chinese: ["布隆迪", "蒲隆地"] },
+    // 中南美洲產區
+    { english: "Colombia", chinese: ["哥倫比亞", "哥國"] },
     { english: "Brazil", chinese: ["巴西"] },
-    { english: "Panama", chinese: ["巴拿馬"] },
-    { english: "Indonesia", chinese: ["印尼"] },
+    { english: "Panama", chinese: ["巴拿馬", "翡翠莊園"] },
+    { english: "Guatemala", chinese: ["瓜地馬拉", "安提瓜"] },
+    { english: "El Salvador", chinese: ["薩爾瓦多"] },
+    { english: "Costa Rica", chinese: ["哥斯大黎加", "哥斯達黎加", "塔拉珠"] },
+    // 亞洲產區
+    { english: "Indonesia", chinese: ["印尼", "蘇門答臘", "托拉查", "曼特寧"] },
+    { english: "Vietnam", chinese: ["越南", "羅布斯塔"] },
+    { english: "India", chinese: ["印度", "莫索爾", "馬拉巴"] },
+    { english: "Thailand", chinese: ["泰國", "清邁"] },
+    { english: "Papua New Guinea", chinese: ["巴布亞", "紐幾內亞", "新幾內亞", "png"] },
   ];
 
   for (const { english, chinese } of origins) {
@@ -214,14 +303,36 @@ function extractPreferencesFromHistory(
     }
   }
 
-  // 提取特定品種
+  // 提取特定品種/產區名稱（根據實際產品資料）
   const varieties = [
-    { keywords: ["geisha", "藝伎", "瑰夏"], name: "geisha" },
-    { keywords: ["bourbon", "波旁"], name: "bourbon" },
-    { keywords: ["曼特寧", "mandheling"], name: "mandheling" },
-    { keywords: ["耶加雪菲", "yirgacheffe"], name: "yirgacheffe" },
+    // 知名品種
+    { keywords: ["geisha", "藝伎", "瑰夏", "gesha"], name: "Geisha" },
+    { keywords: ["pacamara", "帕卡瑪拉"], name: "Pacamara" },
+    { keywords: ["bourbon", "波旁", "卡杜艾", "catuai"], name: "Bourbon" },
+    { keywords: ["peaberry", "皮貝瑞", "圓豆"], name: "Peaberry" },
+    // 衣索比亞產區
+    { keywords: ["耶加雪菲", "耶加", "yirgacheffe", "yirga"], name: "Yirgacheffe" },
+    { keywords: ["古吉", "guji"], name: "Guji" },
+    { keywords: ["西達摩", "sidamo", "sidama"], name: "Sidamo" },
+    { keywords: ["科契爾", "kochere"], name: "Kochere" },
+    { keywords: ["哈拉", "harar", "花魯"], name: "Harar" },
+    // 印尼產區
+    { keywords: ["曼特寧", "mandheling", "mandeling"], name: "Mandheling" },
+    { keywords: ["托拉查", "toraja"], name: "Toraja" },
+    // 中美洲產區
+    { keywords: ["安提瓜", "antigua"], name: "Antigua" },
+    { keywords: ["塔拉珠", "tarrazu", "tarrazú"], name: "Tarrazu" },
   ];
 
+  // 提取處理法偏好
+  const processingMethods = [
+    { keywords: ["日曬", "natural", "乾處理"], name: "Natural" },
+    { keywords: ["水洗", "washed", "濕處理"], name: "Washed" },
+    { keywords: ["蜜處理", "honey", "黃蜜", "黑蜜", "紅蜜"], name: "Honey" },
+    { keywords: ["厭氧", "anaerobic", "發酵"], name: "Anaerobic" },
+  ];
+
+  // 品種優先（更具體的搜尋）
   for (const { keywords, name } of varieties) {
     if (keywords.some((kw) => allText.includes(kw))) {
       prefs.specificName = name;
@@ -229,26 +340,49 @@ function extractPreferencesFromHistory(
     }
   }
 
-  // 提取特殊排序需求
+  // 如果沒有指定品種，才看處理法
+  if (!prefs.specificName) {
+    for (const { keywords, name } of processingMethods) {
+      if (keywords.some((kw) => allText.includes(kw))) {
+        prefs.specificName = name;
+        break;
+      }
+    }
+  }
+
+  // 提取特殊排序需求（支援多種說法）
   if (
     allText.includes("最貴") ||
     allText.includes("價格最高") ||
     allText.includes("最高級") ||
-    allText.includes("最頂級")
+    allText.includes("最頂級") ||
+    allText.includes("最好的") ||
+    allText.includes("最稀有") ||
+    allText.includes("最珍貴") ||
+    allText.includes("最豪華")
   ) {
     prefs.specialSort = "most_expensive";
   } else if (
     allText.includes("最便宜") ||
     allText.includes("價格最低") ||
     allText.includes("最平價") ||
-    allText.includes("最實惠")
+    allText.includes("最實惠") ||
+    allText.includes("最省") ||
+    allText.includes("cp值") ||
+    allText.includes("超值") ||
+    allText.includes("入門款")
   ) {
     prefs.specialSort = "cheapest";
   } else if (
     allText.includes("最受歡迎") ||
     allText.includes("最熱門") ||
     allText.includes("人氣最高") ||
-    allText.includes("賣最好")
+    allText.includes("賣最好") ||
+    allText.includes("招牌") ||
+    allText.includes("推薦款") ||
+    allText.includes("熱銷") ||
+    allText.includes("暢銷") ||
+    allText.includes("大家都買")
   ) {
     prefs.specialSort = "most_popular";
   }
