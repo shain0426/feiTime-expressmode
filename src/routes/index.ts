@@ -57,7 +57,7 @@ router.post("/auth/local/register", strictAccountLimiter, register);
 router.post(
   "/auth/local/send-email-confirmation",
   emailActionLimiter,
-  resendEmail
+  resendEmail,
 );
 
 // === 登入相關 ===
@@ -65,18 +65,18 @@ router.post("/login", loginLimiter, loginController);
 router.post(
   "/auth/forgot-password",
   emailActionLimiter,
-  authController.forgotPassword
+  authController.forgotPassword,
 );
 router.post(
   "/auth/reset-password",
   emailActionLimiter,
-  authController.resetPassword
+  authController.resetPassword,
 );
 
 // === Google OAuth ===
 router.get(
-  "/auth/google/callback",
-  googleAuthController.handleGoogleCallback.bind(googleAuthController)
+  "/api/auth/google/callback",
+  googleAuthController.handleGoogleCallback,
 );
 
 // === 購物車相關 ===
