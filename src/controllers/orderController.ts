@@ -19,7 +19,7 @@ const strapiClient = axios.create({
   },
 });
 
-export async function getCart(req: Request, res: Response) {
+export async function getCarts(req: Request, res: Response) {
   try {
     const cart = await fetchStrapiData("cart-items", "*", 1, 100);
     res.json(cart);
