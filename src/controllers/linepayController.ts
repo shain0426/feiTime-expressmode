@@ -4,6 +4,7 @@ import express from "express";
 import "dotenv/config";
 import CryptoJS from "crypto-js";
 import cors from "cors";
+import { Request, Response } from "express";
 
 const LINEPAY_CHANNEL_ID = process.env.LINEPAY_CHANNEL_ID;
 const LINEPAY_CHANNEL_SECRET = process.env.LINEPAY_CHANNEL_SECRET;
@@ -29,7 +30,8 @@ function createSignature(uri, body) {
   return { signature: signature, nonce: nonce };
 }
 
-app.post("/linepay/gobuy", async (req, res) => {
+// 付款請求
+export const linepayRequest = async (req: Request, res: Response) => {
   const amount = Number(req.body.amount);
   const products = req.body.products;
 
@@ -56,15 +58,12 @@ app.post("/linepay/gobuy", async (req, res) => {
 
   const order = {
     amount: amount,
-
     currency: "TWD",
     orderId: `feitime_kaimonorisuto${Date.now()}`,
     packages: [
       {
         id: "pkg_1",
-
         amount: Number(caleSum),
-
         products: lineProducts,
       },
     ],
@@ -96,11 +95,10 @@ app.post("/linepay/gobuy", async (req, res) => {
       message: "網路或伺服器錯誤",
     });
   }
-});
+};
 
-// linepay使用二階段授權機制
-// 以下 app.post()為第二階段 處理付款和付款後的操作
-app.post("/linePay/confirm", async (req, res) => {
+// 付款授權
+export const linepayConfirmation = async (req: Request, res: Response) => {
   const transactionId = req.body.transactionId;
 
   const amount = Number(req.body.amount);
@@ -108,7 +106,7 @@ app.post("/linePay/confirm", async (req, res) => {
   const uri = `/v3/payments/${transactionId}/confirm`;
 
   const confirmBody = {
-    amount: parseInt(amount),
+    amount: amount,
     currency: "TWD",
   };
 
@@ -138,15 +136,11 @@ app.post("/linePay/confirm", async (req, res) => {
         returnCode: response.data.returnCode,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("付款授權失敗", error.response?.data || error.message);
     res.status(500).json({
       status: "error",
       message: "網路或伺服器錯誤",
     });
   }
-});
-
-app.listen(8080, () =>
-  console.log("⭐ 我已經準備好當前端和linepay的媒人了 ：http://localhost:8080"),
-);
+};

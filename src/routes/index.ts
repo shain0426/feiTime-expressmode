@@ -39,6 +39,11 @@ import {
   deleteCarts,
 } from "@/controllers/orderController";
 
+import {
+  linepayRequest,
+  linepayConfirmation,
+} from "@/controllers/linepayController";
+
 const router = Router();
 
 // 所有API都放在這裡管理
@@ -70,8 +75,8 @@ router.put("/orders/:id", orderUpdate);
 router.get("/products/get", productsGet);
 router.put("/products/:id", productsUpdate);
 router.delete("/cart-items/:id", deleteCarts);
-router.post("/cart-items/:id", K); // linepay 付款請求
-router.post("/linePay/confirm", J); // linepay 付款授權
+router.post("/linepay/gobuy", linepayRequest); // linepay 付款請求
+router.post("/linePay/confirm", linepayConfirmation); // linepay 付款授權
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
