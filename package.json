@@ -2,7 +2,7 @@
   "name": "feitime-expressmode",
   "version": "1.0.0",
   "_moduleAliases": {
-    "@": "dist"
+    "@": "src"
   },
   "description": "FeiTime Express Backend API",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "dev": "nodemon --require tsconfig-paths/register src/index.ts",
+    "dev": "nodemon src/index.ts",
     "build": "tsc && tsc-alias",
     "start": "node -r module-alias/register dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -41,7 +41,7 @@
     "globals": "^17.0.0",
     "jiti": "^2.6.1",
     "nodemon": "^3.1.11",
-    "ts-node": "^1.7.1",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript-eslint": "^8.53.0"
   }
