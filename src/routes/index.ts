@@ -70,6 +70,8 @@ router.put("/orders/:id", orderUpdate);
 router.get("/products/get", productsGet);
 router.put("/products/:id", productsUpdate);
 router.delete("/cart-items/:id", deleteCarts);
+router.post("/cart-items/:id", K); // linepay 付款請求
+router.post("/linePay/confirm", J); // linepay 付款授權
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);
