@@ -170,3 +170,15 @@ export const productsPut = async (table: string, dataObj: any, id: string) => {
     throw new Error(err.response?.data?.error?.message || "資料新增失敗");
   }
 };
+
+export const cartsDelete = async (table: string, id: string) => {
+  try {
+    const res = await strapiClient.delete(`/api/${table}/${id}`);
+
+    console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ 失敗:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  }
+};

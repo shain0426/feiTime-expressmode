@@ -4,6 +4,7 @@ import {
   strapiPost,
   strapiPut,
   productsPut,
+  cartsDelete,
 } from "@/services/dataService";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -113,6 +114,24 @@ export const productsUpdate = async (req: Request, res: Response) => {
     const errorMessage = err.response?.data?.error?.message || err.message;
 
     console.error("PUT 錯誤:", errorMessage);
+    res.status(statusCode).json({ detail: errorMessage });
+  }
+};
+
+export const deleteCarts = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id;
+
+    console.log("檢查delete的參數");
+    console.log(id);
+    const result = await cartsDelete("cart-items", id);
+    console.log(result.data);
+    res.status(200).json(result.data);
+  } catch (err: any) {
+    const statusCode = err.response?.status || 500;
+    const errorMessage = err.response?.data?.error?.message || err.message;
+
+    console.error("delete 錯誤:", errorMessage);
     res.status(statusCode).json({ detail: errorMessage });
   }
 };
