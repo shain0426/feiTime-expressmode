@@ -12,8 +12,6 @@ dotenv.config();
 import routes from "./routes/index";
 import googleAuthRouter from "./routes/googleAuth";
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; //允許自簽憑證，但正式上線要拿掉！！！
-
 const app = express();
 const PORT = process.env.PORT || 4000;
 
