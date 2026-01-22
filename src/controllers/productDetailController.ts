@@ -129,7 +129,7 @@ export async function recommendProductsHandler(req: Request, res: Response) {
 // 修改商品
 export async function updateProductHandler(req: Request, res: Response) {
   try {
-    const { documentId } = req.params;
+    const { pid } = req.params;
 
     const {
       name,
@@ -159,8 +159,39 @@ export async function updateProductHandler(req: Request, res: Response) {
       imgIds?: number[];
     };
 
-    if (!documentId) {
-      return res.status(400).json({ success: false, error: "缺少 documentId" });
+    if (!pid) {
+      return res.status(400).json({ success: false, error: "缺少 pid" });
+    }
+
+    // 用前端傳來的 pid 去資料庫查詢商品（取得 documentId )
+    const products = await fetchStrapiData("products", "*", 1, 1, {
+      filters: {
+        pid: { $eq: pid },
+      },
+    });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({
+        error: "找不到此商品",
+      });
+    }
+
+    // 商品編號理論上是唯一的，所以拿第一筆商品
+    const product = products[0];
+
+    // 診斷日誌
+    console.log("📋 商品資料:", {
+      documentId: product.documentId,
+      pid: product.pid,
+    });
+
+    // 檢查 documentId 是否存在
+    if (!product.documentId) {
+      console.error("❌ 警告：documentId 不存在，商品資料:", product);
+      return res.status(500).json({
+        error: "商品缺少 documentId",
+        product: product,
+      });
     }
 
     const updateData: any = {
@@ -178,12 +209,16 @@ export async function updateProductHandler(req: Request, res: Response) {
       ...(Array.isArray(imgIds) ? { img: imgIds } : {}), // 這行就是「刪圖」：把關聯改成保留的
     };
 
-    const updated = await putStrapiData("products", documentId, updateData);
+    const updatedProduct = await putStrapiData(
+      "products",
+      product.documentId,
+      updateData,
+    );
 
     return res.json({
       success: true,
       message: "商品更新成功",
-      data: updated,
+      data: updatedProduct,
     });
   } catch (error: any) {
     console.error(
