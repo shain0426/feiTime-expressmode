@@ -80,15 +80,23 @@ export const fetchStrapiData = async (
     };
 
     // 遞迴函數：將巢狀物件展開為 Strapi 查詢參數格式
-    const flattenParams = (obj: any, prefix: string, target: any) => {
+    const flattenParams = (
+      obj: unknown,
+      prefix: string,
+      target: Record<string, string | number>,
+    ) => {
       if (typeof obj === "object" && obj !== null) {
         if (Array.isArray(obj)) {
-          obj.forEach((item, index) => {
+          obj.forEach((item: unknown, index: number) => {
             flattenParams(item, `${prefix}[${index}]`, target);
           });
         } else {
-          Object.keys(obj).forEach((key) => {
-            flattenParams(obj[key], `${prefix}[${key}]`, target);
+          Object.keys(obj as Record<string, unknown>).forEach((key) => {
+            flattenParams(
+              (obj as Record<string, unknown>)[key],
+              `${prefix}[${key}]`,
+              target,
+            );
           });
         }
       } else if (obj !== undefined) {
@@ -155,18 +163,26 @@ export const fetchStrapiData = async (
  * 公版函式：新增 Strapi 資料 (POST)
  * @description 給購物車使用的版本，會自動包裝 data
  */
-export const postStrapiData = async (collectionName: string, data: any) => {
+export const postStrapiData = async (
+  collectionName: string,
+  data: Record<string, unknown>,
+) => {
   try {
     console.log("POST Headers:", strapiClient.defaults.headers);
     const res = await strapiClient.post(`/api/${collectionName}`, { data });
     return res.data?.data;
-  } catch (err: any) {
-    console.error("❌ Strapi POST error:", err.toJSON?.() ?? err);
+  } catch (err: unknown) {
+    const axiosError = err as {
+      toJSON?: () => unknown;
+      message?: string;
+      response?: unknown;
+    };
+    console.error("❌ Strapi POST error:", axiosError.toJSON?.() ?? err);
     // 確保錯誤往上拋時包含 response 資料 (讓 controller 可以抓到 details)
-    if (err.response) {
+    if (axiosError.response) {
       throw err;
     }
-    throw new Error(err.message);
+    throw new Error(axiosError.message || "Strapi POST request failed");
   }
 };
 
@@ -177,15 +193,16 @@ export const postStrapiData = async (collectionName: string, data: any) => {
 export const putStrapiData = async (
   collectionName: string,
   documentId: string,
-  data: any,
+  data: Record<string, unknown>,
 ) => {
   try {
     const res = await strapiClient.put(`/api/${collectionName}/${documentId}`, {
       data,
     });
     return res.data?.data;
-  } catch (err: any) {
-    console.error("❌ Strapi PUT error:", err.toJSON?.() ?? err);
+  } catch (err: unknown) {
+    const axiosError = err as { toJSON?: () => unknown };
+    console.error("❌ Strapi PUT error:", axiosError.toJSON?.() ?? err);
     throw err;
   }
 };
@@ -285,7 +302,10 @@ export const deleteStrapiData = async (
  * @param table - Strapi table 名稱，例如 "products"
  * @param dataObj - 要存入的資料物件
  */
-export const strapiPost = async (table: string, dataObj: any) => {
+export const strapiPost = async (
+  table: string,
+  dataObj: Record<string, unknown>,
+) => {
   try {
     // Strapi 的規範：所有欄位必須放在 "data" 層級下
     const body = {
@@ -298,14 +318,27 @@ export const strapiPost = async (table: string, dataObj: any) => {
 
     // Strapi 回傳通常也會包在 data 欄位裡
     return res.data?.data ?? null;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: { data?: { error?: { message?: string } } };
+    };
     // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
-    console.error("❌ Strapi POST Error:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+    console.error(
+      "❌ Strapi POST Error:",
+      axiosError.response?.data || axiosError.message,
+    );
+    throw new Error(
+      axiosError.response?.data?.error?.message || "資料新增失敗",
+    );
   }
 };
 
-export const strapiPut = async (table: string, dataObj: any, id: string) => {
+export const strapiPut = async (
+  table: string,
+  dataObj: Record<string, unknown>,
+  id: string,
+) => {
   try {
     const body = {
       data: dataObj,
@@ -315,13 +348,26 @@ export const strapiPut = async (table: string, dataObj: any, id: string) => {
 
     console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
     return res.data;
-  } catch (err: any) {
-    console.error("❌ 失敗:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: { data?: { error?: { message?: string } } };
+    };
+    console.error(
+      "❌ 失敗:",
+      axiosError.response?.data || axiosError.message,
+    );
+    throw new Error(
+      axiosError.response?.data?.error?.message || "資料新增失敗",
+    );
   }
 };
 
-export const productsPut = async (table: string, dataObj: any, id: string) => {
+export const productsPut = async (
+  table: string,
+  dataObj: Record<string, unknown>,
+  id: string,
+) => {
   try {
     const body = {
       data: dataObj,
@@ -331,9 +377,18 @@ export const productsPut = async (table: string, dataObj: any, id: string) => {
 
     console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
     return res.data;
-  } catch (err: any) {
-    console.error("❌ 失敗:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: { data?: { error?: { message?: string } } };
+    };
+    console.error(
+      "❌ 失敗:",
+      axiosError.response?.data || axiosError.message,
+    );
+    throw new Error(
+      axiosError.response?.data?.error?.message || "資料新增失敗",
+    );
   }
 };
 
@@ -343,8 +398,17 @@ export const cartsDelete = async (table: string, id: string) => {
 
     console.log("Strapi 原生回傳:", JSON.stringify(res.data, null, 2));
     return res.data;
-  } catch (err: any) {
-    console.error("❌ 失敗:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.error?.message || "資料新增失敗");
+  } catch (err: unknown) {
+    const axiosError = err as {
+      message?: string;
+      response?: { data?: { error?: { message?: string } } };
+    };
+    console.error(
+      "❌ 失敗:",
+      axiosError.response?.data || axiosError.message,
+    );
+    throw new Error(
+      axiosError.response?.data?.error?.message || "資料刪除失敗",
+    );
   }
 };
