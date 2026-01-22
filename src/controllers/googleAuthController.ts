@@ -32,7 +32,8 @@ class GoogleAuthController {
         authData.user,
       );
       res.redirect(callbackUrl);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error("Google auth callback error:", error);
       res.redirect(googleAuthService.buildFrontendErrorUrl("auth_failed"));
     }
   }

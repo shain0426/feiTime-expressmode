@@ -1,5 +1,4 @@
 import { Router } from "express";
-// import { geminiHandler } from "@/controllers/geminiController";
 import { productHandler } from "@/controllers/productController";
 import { questionHandler } from "@/controllers/questionController";
 import {
@@ -45,18 +44,24 @@ import {
   productsUpdate,
   deleteCarts,
 } from "@/controllers/orderController";
-
 import {
   linepayRequest,
   linepayConfirmation,
 } from "@/controllers/linepayController";
+import {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeCartItem,
+  clearUserCart,
+} from "@/controllers/cartController";
+import { UpdateInfo } from "@/controllers/memberController";
 
 const router = Router();
 
 // 所有API都放在這裡管理
 
 // === Gemini AI 相關 ===
-// router.post("/gemini", geminiHandler); // 沖煮參數建議(測試用)
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
 router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
@@ -109,7 +114,7 @@ router.post(
   authController.resetPassword,
 );
 
-// User相關
+//=== User相關 ===
 router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
 router.get("/admin-users", requireAdmin, userController.getAllUsers); // 使用者資訊
 router.get("/admin-users/:id", requireAdmin, userController.getUserById); // 單一使用者資訊
@@ -126,18 +131,13 @@ router.get(
 );
 
 // === 購物車相關 ===
-import {
-  getCart,
-  addToCart,
-  updateCartItem,
-  removeCartItem,
-  clearUserCart,
-} from "@/controllers/cartController";
-
 router.get("/cart", getCart);
 router.post("/cart", addToCart);
 router.put("/cart/:documentId", updateCartItem);
 router.delete("/cart/:documentId", removeCartItem);
 router.delete("/cart", clearUserCart);
+
+// === 會員相關 ===
+router.put("/users/:userId", UpdateInfo);
 
 export default router;

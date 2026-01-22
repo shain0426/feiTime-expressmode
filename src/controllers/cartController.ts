@@ -5,6 +5,7 @@ import {
     putStrapiData,
     deleteStrapiData,
 } from "@/services/dataService";
+import { handleError } from "@/utils/errorHandler";
 
 /**
  * GET /api/cart
@@ -28,9 +29,8 @@ export const getCart = async (req: Request, res: Response) => {
             populate: ['product']  // 展開 product 關聯以取得即時庫存
         });
         res.json(data);
-    } catch (error: any) {
-        console.error("[getCart error]", error);
-        res.status(500).json({ error: "Failed to fetch cart" });
+    } catch (error: unknown) {
+        return handleError(error, res, "Failed to fetch cart");
     }
 };
 
@@ -64,20 +64,8 @@ export const addToCart = async (req: Request, res: Response) => {
         // 呼叫 Strapi 新增
         const data = await postStrapiData("cart-items", strapiPayload);
         res.json(data);
-    } catch (error: any) {
-        console.error("[addToCart error]", error);
-
-        // Debug: Print the exact error response from Strapi
-        if (error.response) {
-            console.error("🔴 Strapi Response Status:", error.response.status);
-            console.error("🔴 Strapi Response Data:", JSON.stringify(error.response.data, null, 2));
-        }
-
-        // 回傳詳細錯誤資訊以便除錯
-        res.status(500).json({
-            error: "Failed to add to cart",
-            details: error.response?.data || error.message
-        });
+    } catch (error: unknown) {
+        return handleError(error, res, "Failed to add to cart");
     }
 };
 
@@ -97,9 +85,8 @@ export const updateCartItem = async (req: Request, res: Response) => {
 
         const data = await putStrapiData("cart-items", documentId, payload);
         res.json(data);
-    } catch (error: any) {
-        console.error("[updateCartItem error]", error);
-        res.status(500).json({ error: "Failed to update cart item" });
+    } catch (error: unknown) {
+        return handleError(error, res, "Failed to update cart item");
     }
 };
 
@@ -116,9 +103,8 @@ export const removeCartItem = async (req: Request, res: Response) => {
 
         await deleteStrapiData("cart-items", documentId);
         res.json({ success: true });
-    } catch (error: any) {
-        console.error("[removeCartItem error]", error);
-        res.status(500).json({ error: "Failed to remove cart item" });
+    } catch (error: unknown) {
+        return handleError(error, res, "Failed to remove cart item");
     }
 };
 
@@ -147,7 +133,7 @@ export const clearUserCart = async (req: Request, res: Response) => {
         console.log(`🧹 Clearing cart for user ${userId}. Found ${cartItems.length} items.`);
 
         // 2. 逐筆刪除 (因為 Strapi 預設 API 不支援 Batch Delete by Filter)
-        const deletePromises = cartItems.map((item: any) => {
+        const deletePromises = cartItems.map((item: { documentId?: string }) => {
             if (item.documentId) {
                 return deleteStrapiData("cart-items", item.documentId);
             }
@@ -157,8 +143,7 @@ export const clearUserCart = async (req: Request, res: Response) => {
         await Promise.all(deletePromises);
 
         res.json({ success: true, deletedCount: cartItems.length });
-    } catch (error: any) {
-        console.error("[clearUserCart error]", error);
-        res.status(500).json({ error: "Failed to clear cart" });
+    } catch (error: unknown) {
+        return handleError(error, res, "Failed to clear cart");
     }
 };

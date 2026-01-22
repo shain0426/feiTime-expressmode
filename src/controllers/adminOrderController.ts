@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { fetchStrapiData, updateStrapiData } from "@/services/dataService";
+import { handleError } from "@/utils/errorHandler";
 
 export async function orderListHandler(req: Request, res: Response) {
   try {
@@ -61,12 +62,8 @@ export async function orderListHandler(req: Request, res: Response) {
     // console.log("後端拿到資料", data);
     // 原樣回傳給前端
     // res.json(data);
-  } catch (error: any) {
-    console.error("[orderListHandler error]", error);
-
-    res.status(500).json({
-      error: "取得 order 失敗",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "取得 order 失敗");
   }
 }
 
@@ -89,11 +86,8 @@ export async function singleOrderHandler(req: Request, res: Response) {
     res.json({
       data: data[0], // 回傳單筆資料
     });
-  } catch (error: any) {
-    console.error("[singleOrderHandler error]", error);
-    res.status(500).json({
-      error: "取得商品失敗",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "取得訂單失敗");
   }
 }
 
@@ -163,11 +157,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
       message: "出貨資訊更新成功",
       data: updatedOrder,
     });
-  } catch (error: any) {
-    console.error("[updateOrderHandler error]", error);
-    res.status(500).json({
-      error: "更新出貨資訊失敗",
-      details: error.message,
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "更新出貨資訊失敗");
   }
 }
