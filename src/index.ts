@@ -16,7 +16,6 @@ const PORT = process.env.PORT || 4000;
 //允許前端跨域請求 (支援本地開發和正式環境)
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://localhost:5174",
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -91,5 +90,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 
   // DEBUG: Prevent process from exiting if event loop is empty (防呆用)
-  setInterval(() => { }, 60000);
+  setInterval(() => {}, 60000);
 });
