@@ -34,7 +34,6 @@ import {
 import { userController } from "@/controllers/adminUserController";
 import { requireAdmin } from "@/middlewares/requireAdmin";
 import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
-import googleAuthController from "../controllers/googleAuthController";
 import {
   getCarts,
   orderCome,
@@ -123,12 +122,6 @@ router.put("/admin-users/:id", requireAdmin, userController.updateUser); // 更�
 // router.get("/admin-users", userController.getAllUsers); // 使用者資訊
 // router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
 // router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
-
-// === Google OAuth ===
-router.get(
-  "/api/auth/google/callback",
-  googleAuthController.handleGoogleCallback,
-);
 
 // === 購物車相關 ===
 router.get("/cart", getCart);
