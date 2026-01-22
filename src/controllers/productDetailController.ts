@@ -85,38 +85,59 @@ export async function singleProductHandler(req: Request, res: Response) {
   }
 }
 
-// 推薦商品
+// 推薦商品(處理法->風味類型)
 export async function recommendProductsHandler(req: Request, res: Response) {
   try {
     const { pid } = req.params;
 
-    // 先取得當前商品的 flavor_type
-    const currentProduct = await fetchStrapiData("products", "*", 1, 1, {
-      fields: ["flavor_type"],
+    // 先取得當前商品
+    const currentProducts = await fetchStrapiData("products", "*", 1, 1, {
+      fields: ["processing", "flavor_type"],
       filters: {
         pid: { $eq: pid },
       },
     });
 
-    if (!currentProduct || currentProduct.length === 0) {
+    if (!currentProducts || currentProducts.length === 0) {
       return res.status(404).json({
         error: "找不到此商品",
       });
     }
 
-    const flavorType = currentProduct[0].flavor_type;
+    const currentProduct = currentProducts?.[0];
 
-    // 取得相同 flavor_type 的商品(排除當前商品)
-    const recommendations = await fetchStrapiData("products", "*", 1, 100, {
-      fields: ["name", "pid"],
+    const { processing, flavor_type } = currentProduct;
+
+    // 第一優先：同 processing（最多 10）(排除當前商品)
+    const sameProcessing = await fetchStrapiData("products", "*", 1, 10, {
+      fields: ["name", "pid", "processing", "flavor_type"],
       filters: {
-        flavor_type: { $eq: flavorType },
+        processing: { $eq: processing },
         pid: { $ne: pid },
       },
     });
 
+    // 如果已經滿 10，直接回傳
+    if (sameProcessing.length >= 10) {
+      return res.json({
+        data: sameProcessing,
+      });
+    }
+
+    // 第二優先：同 flavor_type
+    const remain = 10 - sameProcessing.length;
+
+    const sameFlavor = await fetchStrapiData("products", "*", 1, remain, {
+      fields: ["name", "pid", "processing", "flavor_type"],
+      filters: {
+        flavor_type: { $eq: flavor_type },
+        pid: { $ne: pid },
+        processing: { $ne: processing },
+      },
+    });
+
     res.json({
-      data: recommendations || [],
+      data: [...sameProcessing, ...sameFlavor],
     });
   } catch (error) {
     console.error("[recommendProductsHandler error]", error);
