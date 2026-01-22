@@ -52,8 +52,6 @@ app.use("/api", googleAuthRouter);
 
 //分享功能的route
 app.get("/share", (req, res) => {
-  console.log("收到分享請求！參數：", req.query);
-  res.setHeader("ngrok-skip-browser-warning", "true");
   const { name, img } = req.query;
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
