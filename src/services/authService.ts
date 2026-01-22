@@ -26,7 +26,7 @@ export const authService = {
   async registerUser(userData: RegisterUserData): Promise<AuthResponse> {
     const response = await strapiClient.post(
       "/api/auth/local/register",
-      userData
+      userData,
     );
     return response.data;
   },
@@ -37,7 +37,7 @@ export const authService = {
   async sendConfirmationEmail(email: string) {
     const response = await strapiClient.post(
       "/api/auth/send-email-confirmation",
-      { email }
+      { email },
     );
     return response.data;
   },
@@ -47,7 +47,7 @@ export const authService = {
    */
   async loginWithStrapi(
     identifier: string,
-    password: string
+    password: string,
   ): Promise<AuthResponse> {
     const response = await strapiClient.post("/api/auth/local", {
       identifier,
@@ -91,6 +91,36 @@ export const authService = {
   },
 };
 
+export const userService = {
+  // 取得所有用戶
+  async getAllUsers(token: string) {
+    const { data } = await strapiClient.get("/api/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
+  async getUserById(id: string, token: string) {
+    const { data } = await strapiClient.get(`/api/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
+  async getCurrentUser(token: string) {
+    const { data } = await strapiClient.get("/api/users/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
+  async updateUser(id: string, userData: any, token: string) {
+    const { data } = await strapiClient.put(`/api/users/${id}`, userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+};
 // import axios from "axios";
 // import { AuthResponse } from "@/types/auth";
 
