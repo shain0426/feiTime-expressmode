@@ -2,13 +2,17 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+
+//讀取 .env 環境變數，例如 GEMINI_API_KEY
+// IMPORTANT: dotenv 必須在其他 import 之前執行，確保 process.env 有值
+// 修正：將 routes 移到 dotenv.config() 之後
+dotenv.config();
+
+// 現在 import routes，內部的 dataService 就會讀到正確的 process.env.STRAPI_URL
 import routes from "./routes/index";
 import googleAuthRouter from "./routes/googleAuth";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; //允許自簽憑證，但正式上線要拿掉！！！
-
-//讀取 .env 環境變數，例如 GEMINI_API_KEY
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
