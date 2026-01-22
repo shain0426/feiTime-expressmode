@@ -22,11 +22,10 @@ export async function requireAdmin(
     console.log("[requireAdmin] me =", {
       id: user?.id,
       email: user?.email,
-      roleName: user?.role?.name,
       user_role: user?.user_role,
     });
 
-    const isAdmin = user?.user_role === "Admin" || user?.role?.name === "Admin";
+    const isAdmin = user?.user_role === "Admin";
 
     if (!isAdmin) {
       return res.status(403).json({ message: "Forbidden (not admin)" });

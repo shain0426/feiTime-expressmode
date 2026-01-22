@@ -6,6 +6,8 @@ import {
   productDetailHandler,
   singleProductHandler,
   recommendProductsHandler,
+  updateProductHandler,
+  createProductHandler,
 } from "@/controllers/productDetailController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
 import {
@@ -76,6 +78,12 @@ router.get("/featured/products", featuredProductHandler); // 首頁：精選產�
 router.get("/admin-orders", requireAdmin, orderListHandler); // 訂單資訊
 router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 單一訂單資訊
 router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
+// TODO:產品寫完記得加 requireAdmin
+router.get("/admin-products", productDetailHandler); // 產品資訊
+router.get("/admin-products/:pid", singleProductHandler); // 單一產品資訊
+router.put("/admin-products/:pid", updateProductHandler); // 更新單一產品資訊
+router.post("/admin-products", createProductHandler); // 新增單一產品資訊
+
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
 router.get("/get-cart", getCarts);
@@ -114,10 +122,6 @@ router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者
 router.get("/admin-users", requireAdmin, userController.getAllUsers); // 使用者資訊
 router.get("/admin-users/:id", requireAdmin, userController.getUserById); // 單一使用者資訊
 router.put("/admin-users/:id", requireAdmin, userController.updateUser); // 更新單一使用者資訊
-// router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
-// router.get("/admin-users", userController.getAllUsers); // 使用者資訊
-// router.get("/admin-users/:id", userController.getUserById); // 單一使用者資訊
-// router.put("/admin-users/:id", userController.updateUser); // 更新單一使用者資訊
 
 // === Google OAuth ===
 router.get(
