@@ -91,8 +91,8 @@ const getGeminiRecommendation = async (
     const messages: GeminiMessage[] = [{ role: "user", content: prompt }];
 
     const responseText = await geminiText(messages, {
-      model: "gemini-1.5-flash",
-      maxRetries: 1,
+      model: "gemini-2.5-flash",
+      maxRetries: 2,
     });
 
     const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
