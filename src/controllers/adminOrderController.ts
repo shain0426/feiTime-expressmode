@@ -10,7 +10,7 @@ export async function orderListHandler(req: Request, res: Response) {
   try {
     // 解析分頁參數，給預設值
     const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 100;
+    const pageSize = Number(req.query.pageSize) || 1000;
     const order_status = req.query.order_status as string;
     const createdAt = req.query.createdAt as string;
     const paid_at = req.query.paid_at as string;
