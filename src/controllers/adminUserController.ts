@@ -96,13 +96,15 @@ export const userController = {
         });
       }
 
-      const { blocked, user_role, username, phone_number } = req.body;
+      const { blocked, user_role, username, phone_number, shipping_address } =
+        req.body;
 
       const payload: Record<string, any> = {
         ...(typeof blocked === "boolean" ? { blocked } : {}),
         ...(user_role ? { user_role } : {}),
         ...(username ? { username } : {}),
         ...(phone_number ? { phone_number } : {}),
+        ...(shipping_address ? { shipping_address } : {}),
       };
 
       const updatedUser = await userService.updateUser(id, payload, token);
