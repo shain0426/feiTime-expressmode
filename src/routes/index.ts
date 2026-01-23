@@ -5,9 +5,13 @@ import {
   productDetailHandler,
   singleProductHandler,
   recommendProductsHandler,
+} from "@/controllers/productDetailController";
+import {
+  ProductListHandler,
+  adminProductHandler,
   updateProductHandler,
   createProductHandler,
-} from "@/controllers/productDetailController";
+} from "@/controllers/AdminProductController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
 import {
   getRefineAdvice,
@@ -83,8 +87,8 @@ router.get("/admin-orders", requireAdmin, orderListHandler); // 訂單資訊
 router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 單一訂單資訊
 router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
 // TODO:產品寫完記得加 requireAdmin
-router.get("/admin-products", productDetailHandler); // 產品資訊
-router.get("/admin-products/:pid", singleProductHandler); // 單一產品資訊
+router.get("/admin-products", ProductListHandler); // 產品資訊
+router.get("/admin-products/:pid", adminProductHandler); // 單一產品資訊
 router.put("/admin-products/:pid", updateProductHandler); // 更新單一產品資訊
 router.post("/admin-products", createProductHandler); // 新增單一產品資訊
 
