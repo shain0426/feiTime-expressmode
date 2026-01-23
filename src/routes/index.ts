@@ -127,6 +127,7 @@ router.post(
 
 //=== User相關 ===
 router.get("/admin-users/me", userController.getCurrentUser); // 當前使用者資訊
+router.put("/admin-users/me", userController.updateMe); // 更新當前使用者資訊
 router.get("/admin-users", requireAdmin, userController.getAllUsers); // 使用者資訊
 router.get("/admin-users/:id", requireAdmin, userController.getUserById); // 單一使用者資訊
 router.put("/admin-users/:id", requireAdmin, userController.updateUser); // 更新單一使用者資訊

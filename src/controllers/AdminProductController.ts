@@ -8,7 +8,10 @@ import { handleError } from "@/utils";
 
 export async function ProductListHandler(req: Request, res: Response) {
   try {
-    const data = await fetchStrapiData("products", "*", 1, 100, {
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 1000;
+    const sort = req.query.sort as string | string[];
+    const result = await fetchStrapiData("products", "*", page, pageSize, {
       fields: [
         "documentId", // Add documentId
         "name",
@@ -23,25 +26,24 @@ export async function ProductListHandler(req: Request, res: Response) {
         "description",
         "weight",
       ],
+      ...(sort && { sort: Array.isArray(sort) ? sort : [sort] }),
+      includeMeta: true,
     });
 
-    console.log("📦 後端拿到資料筆數:", data?.length);
-    console.log("📦 第一筆資料範例:", data?.[0]);
+    console.log("📦 後端拿到資料筆數:", result?.length);
+    console.log("📦 第一筆資料範例:", result?.[0]);
 
     // 回傳符合前端期望的格式
     res.json({
-      data: data || [], // 包在 data 屬性中
+      data: result.data || [],
+      meta: result.meta, // 包含 pagination 資訊
     });
 
     // console.log("後端拿到資料", data);
     // 原樣回傳給前端
     // res.json(data);
-  } catch (error) {
-    console.error("[productDetailHandler error]", error);
-
-    res.status(500).json({
-      error: "取得 products 失敗",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "取得產品失敗");
   }
 }
 
@@ -78,11 +80,8 @@ export async function adminProductHandler(req: Request, res: Response) {
     res.json({
       data: data[0], // 回傳單筆資料
     });
-  } catch (error) {
-    console.error("[singleProductHandler error]", error);
-    res.status(500).json({
-      error: "取得商品失敗",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "取得單一產品失敗");
   }
 }
 
@@ -140,11 +139,8 @@ export async function recommendProductsHandler(req: Request, res: Response) {
     res.json({
       data: [...sameProcessing, ...sameFlavor],
     });
-  } catch (error) {
-    console.error("[recommendProductsHandler error]", error);
-    res.status(500).json({
-      error: "取得推薦商品失敗",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "取得推薦產品失敗");
   }
 }
 

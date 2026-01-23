@@ -27,7 +27,7 @@ export async function orderListHandler(req: Request, res: Response) {
     //   sort: ["price:desc"],
     // });
 
-    const data = await fetchStrapiData("orders", "*", page, pageSize, {
+    const result = await fetchStrapiData("orders", "*", page, pageSize, {
       fields: [
         "order_number",
         "subtotal",
@@ -53,19 +53,18 @@ export async function orderListHandler(req: Request, res: Response) {
         ...(shipped_at && { shipped_at: { $eq: shipped_at } }),
       },
       ...(sort && { sort: Array.isArray(sort) ? sort : [sort] }),
+      includeMeta: true,
     });
 
-    console.log("📦 後端拿到資料筆數:", data?.length);
-    console.log("📦 第一筆資料範例:", data?.[0]);
+    console.log("📦 後端拿到資料筆數:", result.data?.length);
+    console.log("📦 分頁資訊:", result.meta);
+    console.log("📦 第一筆資料範例:", result.data?.[0]);
 
-    // ⭐ 重要：回傳符合前端期望的格式
+    // ✅ 正確回傳格式
     res.json({
-      data: data || [], // 包在 data 屬性中
+      data: result.data || [],
+      meta: result.meta, // 包含 pagination 資訊
     });
-
-    // console.log("後端拿到資料", data);
-    // 原樣回傳給前端
-    // res.json(data);
   } catch (error: unknown) {
     return handleError(error, res, "取得 order 失敗");
   }
