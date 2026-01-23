@@ -22,7 +22,6 @@ export const UpdateInfo = async (req: Request, res: Response) => {
 
     console.log(`✏️ 更新用戶 #${userId}:`, updateData);
 
-    // Strapi Users & Permissions API 不需要包 { data: ... }
     const response = await strapiClient.put(`/api/users/${userId}`, updateData);
 
     console.log("✅ 更新成功:", response.data);

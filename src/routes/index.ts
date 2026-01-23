@@ -55,6 +55,7 @@ import {
   clearUserCart,
 } from "@/controllers/cartController";
 import { UpdateInfo } from "@/controllers/memberController";
+import { getMemberOrders } from "@/controllers/memberOrderController";
 
 const router = Router();
 
@@ -131,6 +132,7 @@ router.delete("/cart/:documentId", removeCartItem);
 router.delete("/cart", clearUserCart);
 
 // === 會員相關 ===
-router.put("/users/:userId", UpdateInfo);
+router.put("/users/:userId", UpdateInfo); // 更新會員資料
+router.get("/member/:userId", getMemberOrders); // 取得會員所有訂單
 
 export default router;
