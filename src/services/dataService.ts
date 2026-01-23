@@ -69,6 +69,7 @@ export const fetchStrapiData = async (
     filters?: StrapiFilters;
     sort?: string[];
     populate?: string[]; // 新增：指定要展開的關聯
+    includeMeta?: boolean; // 是否回傳分頁資訊，預設 false
   },
 ) => {
   try {
@@ -148,7 +149,14 @@ export const fetchStrapiData = async (
     console.log("🚀 Strapi response status:", res.status);
     console.log("🚀 Strapi response data:", res.data);
 
-    // 直接回傳 data 層
+    // 根據 includeMeta 決定回傳格式
+    if (options?.includeMeta) {
+      return {
+        data: res.data?.data ?? [],
+        meta: res.data?.meta ?? null,
+      };
+    }
+    // 預設只回傳 data（向後相容）
     return res.data?.data ?? [];
   } catch (err) {
     const errorObj = err as { toJSON?: () => unknown; message?: string };
@@ -353,10 +361,7 @@ export const strapiPut = async (
       message?: string;
       response?: { data?: { error?: { message?: string } } };
     };
-    console.error(
-      "❌ 失敗:",
-      axiosError.response?.data || axiosError.message,
-    );
+    console.error("❌ 失敗:", axiosError.response?.data || axiosError.message);
     throw new Error(
       axiosError.response?.data?.error?.message || "資料新增失敗",
     );
@@ -382,10 +387,7 @@ export const productsPut = async (
       message?: string;
       response?: { data?: { error?: { message?: string } } };
     };
-    console.error(
-      "❌ 失敗:",
-      axiosError.response?.data || axiosError.message,
-    );
+    console.error("❌ 失敗:", axiosError.response?.data || axiosError.message);
     throw new Error(
       axiosError.response?.data?.error?.message || "資料新增失敗",
     );
@@ -403,10 +405,7 @@ export const cartsDelete = async (table: string, id: string) => {
       message?: string;
       response?: { data?: { error?: { message?: string } } };
     };
-    console.error(
-      "❌ 失敗:",
-      axiosError.response?.data || axiosError.message,
-    );
+    console.error("❌ 失敗:", axiosError.response?.data || axiosError.message);
     throw new Error(
       axiosError.response?.data?.error?.message || "資料刪除失敗",
     );
