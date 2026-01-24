@@ -1,10 +1,10 @@
-// 去開 ngrok  指令在env
 import axios from "axios";
 import express from "express";
 import "dotenv/config";
 import CryptoJS from "crypto-js";
 import cors from "cors";
 import { Request, Response } from "express";
+import { handleError } from "@/utils/errorHandler";
 
 const LINEPAY_CHANNEL_ID = process.env.LINEPAY_CHANNEL_ID;
 const LINEPAY_CHANNEL_SECRET = process.env.LINEPAY_CHANNEL_SECRET;
@@ -15,13 +15,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-function createSignature(uri, body) {
+interface LinePayProduct {
+  id: string | number;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface CartProduct {
+  product: {
+    id: string | number;
+    name: string;
+    price: number;
+  };
+  quantity: number;
+}
+
+function createSignature(uri: string, body: Record<string, unknown>) {
   const nonce = Date.now().toString();
-
   const bodyString = JSON.stringify(body);
-
   const string = LINEPAY_CHANNEL_SECRET + uri + bodyString + nonce;
-
   const signature = CryptoJS.HmacSHA256(
     string,
     LINEPAY_CHANNEL_SECRET,
@@ -33,11 +46,11 @@ function createSignature(uri, body) {
 // 付款請求
 export const linepayRequest = async (req: Request, res: Response) => {
   const amount = Number(req.body.amount);
-  const products = req.body.products;
+  const products = req.body.products as CartProduct[];
 
   const uri = "/v3/payments/request"; // 付款請求 POST 要傳送過去的路由
 
-  const lineProducts = products.map((p) => ({
+  const lineProducts = products.map((p: CartProduct) => ({
     id: p.product.id,
     name: p.product.name,
     quantity: Number(p.quantity),
@@ -88,12 +101,8 @@ export const linepayRequest = async (req: Request, res: Response) => {
     });
 
     res.json(response.data);
-  } catch (error: any) {
-    console.error("付款請求失敗", error.response?.data || error.message);
-    res.status(500).json({
-      status: "error",
-      message: "網路或伺服器錯誤",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "付款請求失敗");
   }
 };
 
@@ -136,11 +145,7 @@ export const linepayConfirmation = async (req: Request, res: Response) => {
         returnCode: response.data.returnCode,
       });
     }
-  } catch (error: any) {
-    console.error("付款授權失敗", error.response?.data || error.message);
-    res.status(500).json({
-      status: "error",
-      message: "網路或伺服器錯誤",
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "付款授權失敗");
   }
 };
