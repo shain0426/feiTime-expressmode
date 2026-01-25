@@ -209,12 +209,85 @@ export async function updateOrderHandler(req: Request, res: Response) {
   }
 }
 
-// 訂單頁進入才查：查到 delivered 就把 order_status 改 delivered
+// =========================================================
+// 以下為新增的同步物流狀態功能
+// =========================================================
+
+// 抓取Track.tw 最新資料，同步訂單狀態
+async function syncOrderLogisticsCore(order: any) {
+  if (!order.UUID || !order.documentId) return { updated: false, order };
+
+  // 1. 抓取 Track.tw 最新資料
+  const tracking = await getTrackingByUuid(order.UUID);
+  const histories = tracking?.package_history ?? [];
+
+  if (histories.length === 0) return { updated: false, order, tracking };
+
+  // 2. 找出最新的一筆 (修正日期排序問題)
+  const latest = [...histories].sort(
+    (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+  )[0];
+
+  const checkpoint = latest?.checkpoint_status?.toLowerCase();
+
+  // 3. 判斷是否需要更新狀態為 delivered
+  if (checkpoint === "delivered" && order.order_status !== "delivered") {
+    const updated = await putStrapiData("orders", order.documentId, {
+      order_status: "delivered",
+    });
+    return { updated: true, order: updated, latest, tracking };
+  }
+
+  return { updated: false, order, latest, tracking };
+}
+
+// 批量更新物流狀態
+export async function bulkSyncLogisticsHandler(req: Request, res: Response) {
+  try {
+    // 撈出所有「配送中」且「有 UUID」的訂單
+    const result = await fetchStrapiData("orders", "*", 1, 500, {
+      filters: {
+        order_status: { $eq: "shipped" },
+        UUID: { $notNull: true },
+      },
+      includeMeta: true,
+    });
+
+    const orders = result.data || [];
+    if (orders.length === 0) {
+      return res.json({
+        success: true,
+        message: "目前沒有配送中的訂單需要同步。",
+      });
+    }
+
+    let updatedCount = 0;
+
+    // 跑迴圈逐筆處理
+    for (const order of orders) {
+      const syncRes = await syncOrderLogisticsCore(order);
+      if (syncRes.updated) updatedCount++;
+
+      // 💡 保護機制：每筆停 500ms，避免被 Track.tw 封鎖
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    res.json({
+      success: true,
+      message: `批量同步完成！掃描 ${orders.length} 筆，其中 ${updatedCount} 筆更新為已送達。`,
+    });
+  } catch (error: unknown) {
+    return handleError(error, res, "批量同步失敗");
+  }
+}
+
+// 進入單一訂單詳情頁才查物流狀態
 export async function getOrderTrackingHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params;
 
-    const orders = await fetchStrapiData("orders", "*", 1, 1, {
+    // 1. 先從 Strapi 拿到訂單基本資訊
+    const orders = await fetchStrapiData("orders", "*", 1, 1000, {
       filters: { order_number: { $eq: order_number } },
     });
 
@@ -223,116 +296,30 @@ export async function getOrderTrackingHandler(req: Request, res: Response) {
     }
 
     const order = orders[0];
-    if (!order.documentId) {
-      return res.status(500).json({ error: "訂單缺少 documentId", order });
-    }
 
+    // 2. 檢查是否有 UUID (沒出貨就不會有物流資訊)
     if (!order.UUID) {
-      return res
-        .status(400)
-        .json({ error: "此訂單尚未建立 Track.tw UUID（可能尚未出貨/未匯入）" });
-    }
-
-    // ✅ 進頁才查 Track.tw
-    const tracking = await getTrackingByUuid(order.UUID);
-
-    const histories = tracking?.package_history ?? [];
-    const latest = [...histories].sort(
-      (a, b) => (b.time ?? 0) - (a.time ?? 0),
-    )[0];
-
-    const checkpoint = latest?.checkpoint_status ?? null; // delivered / transit...
-    const statusText = latest?.status ?? null;
-
-    let updatedOrder = order;
-    if (checkpoint === "delivered" && order.order_status !== "delivered") {
-      updatedOrder = await putStrapiData("orders", order.documentId, {
-        order_status: "delivered",
+      return res.status(200).json({
+        success: false,
+        message: "此訂單尚未出貨或無物流追蹤編號",
+        order,
       });
     }
 
+    // 3. 執行同步邏輯
+    const result = await syncOrderLogisticsCore(order);
+
+    // 4. 回傳前端需要的物流詳細資訊
     res.json({
       success: true,
-      checkpoint_status: checkpoint,
-      status_text: statusText,
-      latest,
-      tracking,
-      order: updatedOrder,
+      checkpoint_status: result.latest?.checkpoint_status ?? null,
+      status_text: result.latest?.status ?? null,
+      latest: result.latest,
+      tracking: result.tracking,
+      order: result.order, // 回傳可能是更新後的 order
+      is_status_changed: result.updated,
     });
   } catch (error: unknown) {
     return handleError(error, res, "取得物流狀態失敗");
   }
 }
-
-// export async function updateOrderHandler(req: Request, res: Response) {
-//   try {
-//     const { order_number } = req.params;
-//     // req.body用來放「請求內容本體」，用在「送資料給後端」的請求
-//     const { tracking_number, shipped_at } = (req.body ?? {}) as {
-//       tracking_number?: string;
-//       shipped_at?: string;
-//     };
-
-//     // 驗證必填欄位
-//     if (!tracking_number || !shipped_at) {
-//       return res.status(400).json({
-//         error: "物流單號和出貨時間為必填",
-//         gotBody: req.body ?? null,
-//       });
-//     }
-
-//     // 用前端傳來的 order_number 去資料庫查詢訂單（取得 documentId )
-//     const orders = await fetchStrapiData("orders", "*", 1, 1, {
-//       filters: {
-//         order_number: { $eq: order_number },
-//       },
-//     });
-
-//     if (!orders || orders.length === 0) {
-//       return res.status(404).json({
-//         error: "找不到此訂單",
-//       });
-//     }
-
-//     // 訂單編號理論上是唯一的，所以拿第一筆訂單
-//     const order = orders[0];
-
-//     // 診斷日誌
-//     console.log("📋 訂單資料:", {
-//       documentId: order.documentId,
-//       order_number: order.order_number,
-//     });
-
-//     // 檢查 documentId 是否存在
-//     if (!order.documentId) {
-//       console.error("❌ 警告：documentId 不存在，訂單資料:", order);
-//       return res.status(500).json({
-//         error: "訂單缺少 documentId",
-//         order: order,
-//       });
-//     }
-
-//     // 準備要更新的內容(物流編號和出貨時間)，並把訂單狀態改成shipped
-//     const updateData = {
-//       tracking_number,
-//       shipped_at,
-//       order_status: "shipped",
-//     };
-
-//     // 用 documentId 更新訂單（真正修改），必須用 documentId （Strapi API 限制）
-//     const updatedOrder = await putStrapiData(
-//       "orders",
-//       order.documentId,
-//       updateData,
-//     );
-
-//     // 更新成功 → 回傳給前端
-//     res.json({
-//       success: true,
-//       message: "出貨資訊更新成功",
-//       data: updatedOrder,
-//     });
-//   } catch (error: unknown) {
-//     return handleError(error, res, "更新出貨資訊失敗");
-//   }
-// }

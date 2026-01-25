@@ -36,6 +36,8 @@ import {
   orderListHandler,
   singleOrderHandler,
   updateOrderHandler,
+  bulkSyncLogisticsHandler,
+  getOrderTrackingHandler,
 } from "@/controllers/adminOrderController";
 import { userController } from "@/controllers/adminUserController";
 import { requireAdmin } from "@/middlewares/requireAdmin";
@@ -111,9 +113,15 @@ router.post("/linepay/gobuy", linepayRequest); // linepay 付款請求
 router.post("/linePay/confirm", linepayConfirmation); // linepay 付款授權
 
 // ===== 後台相關路由 =====
-router.get("/admin-orders", orderListHandler); // 訂單資訊
-router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
-router.put("/admin-orders/:order_number", updateOrderHandler); // 更新單一訂單運送資訊
+router.get("/admin-orders", requireAdmin, orderListHandler); // 訂單資訊
+router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 單一訂單資訊
+router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
+router.post("/admin-orders/bulk-sync", requireAdmin, bulkSyncLogisticsHandler); // 批次同步訂單物流資訊
+router.get(
+  "/admin-orders/:order_number/tracking",
+  requireAdmin,
+  getOrderTrackingHandler,
+); // 取得單一訂單物流資訊
 // TODO:產品寫完記得加 requireAdmin
 router.get("/admin-products", ProductListHandler); // 產品資訊
 router.get("/admin-products/:pid", oneProductHandler); // 單一產品資訊
