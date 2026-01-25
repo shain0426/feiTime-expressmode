@@ -8,10 +8,10 @@ import {
 } from "@/controllers/productDetailController";
 import {
   ProductListHandler,
-  adminProductHandler,
+  oneProductHandler,
   updateProductHandler,
   createProductHandler,
-} from "@/controllers/AdminProductController";
+} from "@/controllers/adminProductController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
 import {
   getRefineAdvice,
@@ -61,8 +61,23 @@ import {
   clearUserCart,
 } from "@/controllers/cartController";
 import { UpdateInfo } from "@/controllers/memberController";
+// 上傳圖片相關
+import fileUpload from "express-fileupload";
+import {
+  uploadImageHandler,
+  deleteImageHandler,
+} from "@/controllers/uploadController";
 
 const router = Router();
+
+// 配置 fileUpload 中間件 (僅用於上傳路由)
+const fileUploadMiddleware = fileUpload({
+  limits: { fileSize: 5 * 1024 * 1024 }, // 限制 5MB
+  abortOnLimit: true,
+  responseOnLimit: "檔案大小超過限制 (最大 5MB)",
+  useTempFiles: false, // 使用記憶體暫存
+  debug: process.env.NODE_ENV === "development",
+});
 
 // 所有API都放在這裡管理
 
@@ -83,15 +98,6 @@ router.get("/product-detail", productDetailHandler); // 產品詳細資訊
 router.get("/product-detail/:pid", singleProductHandler); // 單一產品詳細資訊
 router.get("/product-detail/:pid/recommendations", recommendProductsHandler); // 依風味：推薦商品
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
-router.get("/admin-orders", requireAdmin, orderListHandler); // 訂單資訊
-router.get("/admin-orders/:order_number", requireAdmin, singleOrderHandler); // 單一訂單資訊
-router.put("/admin-orders/:order_number", requireAdmin, updateOrderHandler); // 更新單一訂單運送資訊
-// TODO:產品寫完記得加 requireAdmin
-router.get("/admin-products", ProductListHandler); // 產品資訊
-router.get("/admin-products/:pid", adminProductHandler); // 單一產品資訊
-router.put("/admin-products/:pid", updateProductHandler); // 更新單一產品資訊
-router.post("/admin-products", createProductHandler); // 新增單一產品資訊
-
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
 router.get("/get-cart", getCarts);
@@ -103,6 +109,20 @@ router.put("/products/:id", productsUpdate);
 router.delete("/cart-items/:id", deleteCarts);
 router.post("/linepay/gobuy", linepayRequest); // linepay 付款請求
 router.post("/linePay/confirm", linepayConfirmation); // linepay 付款授權
+
+// ===== 後台相關路由 =====
+router.get("/admin-orders", orderListHandler); // 訂單資訊
+router.get("/admin-orders/:order_number", singleOrderHandler); // 單一訂單資訊
+router.put("/admin-orders/:order_number", updateOrderHandler); // 更新單一訂單運送資訊
+// TODO:產品寫完記得加 requireAdmin
+router.get("/admin-products", ProductListHandler); // 產品資訊
+router.get("/admin-products/:pid", oneProductHandler); // 單一產品資訊
+router.put("/admin-products/:pid", updateProductHandler); // 更新單一產品資訊
+router.post("/admin-products", createProductHandler); // 新增單一產品資訊
+
+// ===== 圖片上傳相關路由 =====
+router.post("/upload", fileUploadMiddleware, uploadImageHandler); // 上傳圖片
+router.delete("/upload/:id", deleteImageHandler); // 刪除圖片（可選功能）
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);

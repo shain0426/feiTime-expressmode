@@ -26,7 +26,7 @@ export async function ProductListHandler(req: Request, res: Response) {
         "description",
         "weight",
       ],
-      ...(sort && { sort: Array.isArray(sort) ? sort : [sort] }),
+      sort: ["pid:asc"],
       includeMeta: true,
     });
 
@@ -47,7 +47,7 @@ export async function ProductListHandler(req: Request, res: Response) {
   }
 }
 
-export async function adminProductHandler(req: Request, res: Response) {
+export async function oneProductHandler(req: Request, res: Response) {
   try {
     const { pid } = req.params; // 從 URL 參數取得 pid
 
@@ -162,6 +162,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_tags,
       description,
       imgIds, // 編輯時才會傳：保留的 media ids
+      publishedAt,
     } = (req.body ?? {}) as {
       name?: string;
       english_name?: string;
@@ -175,6 +176,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_tags?: { name: string }[];
       description?: string;
       imgIds?: number[];
+      publishedAt?: string | null;
     };
 
     if (!pid) {
@@ -183,6 +185,7 @@ export async function updateProductHandler(req: Request, res: Response) {
 
     // 用前端傳來的 pid 去資料庫查詢商品（取得 documentId )
     const products = await fetchStrapiData("products", "*", 1, 1, {
+      fields: ["documentId", "pid"],
       filters: {
         pid: { $eq: pid },
       },
@@ -196,12 +199,6 @@ export async function updateProductHandler(req: Request, res: Response) {
 
     // 商品編號理論上是唯一的，所以拿第一筆商品
     const product = products[0];
-
-    // 診斷日誌
-    console.log("📋 商品資料:", {
-      documentId: product.documentId,
-      pid: product.pid,
-    });
 
     // 檢查 documentId 是否存在
     if (!product.documentId) {
@@ -227,6 +224,11 @@ export async function updateProductHandler(req: Request, res: Response) {
       ...(Array.isArray(imgIds) ? { img: imgIds } : {}), // 這行就是「刪圖」：把關聯改成保留的
     };
 
+    // 處理 publishedAt（上下架狀態）
+    if (publishedAt !== undefined) {
+      updateData.publishedAt = publishedAt;
+    }
+
     const updatedProduct = await putStrapiData(
       "products",
       product.documentId,
@@ -238,16 +240,8 @@ export async function updateProductHandler(req: Request, res: Response) {
       message: "商品更新成功",
       data: updatedProduct,
     });
-  } catch (error: any) {
-    console.error(
-      "[updateProductHandler error]",
-      error?.response?.data ?? error,
-    );
-    return res.status(500).json({
-      success: false,
-      error: "更新商品失敗",
-      details: error?.message,
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "更新產品失敗");
   }
 }
 
@@ -267,8 +261,8 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_type,
       flavor_tags,
       description,
-      // img 先用「media id 陣列」來接
       imgIds,
+      publishedAt, // 新增上下架狀態，預設為已上架
     } = (req.body ?? {}) as {
       name: string;
       english_name: string;
@@ -283,6 +277,7 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_tags: { name: string }[];
       description: string;
       imgIds?: number[];
+      publishedAt?: string | null;
     };
 
     if (!pid || !name) {
@@ -316,6 +311,9 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_tags,
       description,
       ...(Array.isArray(imgIds) ? { img: imgIds } : {}), // Strapi media 關聯吃 id 陣列
+      // 預設為已上架，除非明確設為 null
+      publishedAt:
+        publishedAt !== null ? publishedAt || new Date().toISOString() : null,
     };
 
     const created = await createStrapiData("products", { data: createData });
@@ -325,15 +323,7 @@ export async function createProductHandler(req: Request, res: Response) {
       message: "商品建立成功",
       data: created?.data ?? created,
     });
-  } catch (error: any) {
-    console.error(
-      "[createProductHandler error]",
-      error?.response?.data ?? error,
-    );
-    return res.status(500).json({
-      success: false,
-      error: "建立商品失敗",
-      details: error?.message,
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "建立產品失敗");
   }
 }
