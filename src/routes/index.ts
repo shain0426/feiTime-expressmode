@@ -72,12 +72,12 @@ import {
 
 const router = Router();
 
-// 配置 fileUpload 中間件 (僅用於上傳路由)
+// 上傳圖片中間件
 const fileUploadMiddleware = fileUpload({
   limits: { fileSize: 5 * 1024 * 1024 }, // 限制 5MB
   abortOnLimit: true,
   responseOnLimit: "檔案大小超過限制 (最大 5MB)",
-  useTempFiles: false, // 使用記憶體暫存
+  useTempFiles: false, // 不使用暫存檔案
   debug: process.env.NODE_ENV === "development",
 });
 
@@ -122,15 +122,13 @@ router.get(
   requireAdmin,
   getOrderTrackingHandler,
 ); // 取得單一訂單物流資訊
-// TODO:產品寫完記得加 requireAdmin
-router.get("/admin-products", ProductListHandler); // 產品資訊
-router.get("/admin-products/:pid", oneProductHandler); // 單一產品資訊
-router.put("/admin-products/:pid", updateProductHandler); // 更新單一產品資訊
-router.post("/admin-products", createProductHandler); // 新增單一產品資訊
-
+router.get("/admin-products", requireAdmin, ProductListHandler); // 產品資訊
+router.get("/admin-products/:pid", requireAdmin, oneProductHandler); // 單一產品資訊
+router.put("/admin-products/:pid", requireAdmin, updateProductHandler); // 更新單一產品資訊
+router.post("/admin-products", requireAdmin, createProductHandler); // 新增單一產品資訊
 // ===== 圖片上傳相關路由 =====
-router.post("/upload", fileUploadMiddleware, uploadImageHandler); // 上傳圖片
-router.delete("/upload/:id", deleteImageHandler); // 刪除圖片（可選功能）
+router.post("/admin-products/upload", fileUploadMiddleware, uploadImageHandler); // 上傳圖片
+router.delete("/admin-products/upload/:id", deleteImageHandler); // 刪除圖片
 
 // === 註冊相關 ===
 router.post("/auth/local/register", strictAccountLimiter, register);

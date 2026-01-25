@@ -161,7 +161,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_type,
       flavor_tags,
       description,
-      imgIds, // 編輯時才會傳：保留的 media ids
+      imgIds,
       publishedAt,
     } = (req.body ?? {}) as {
       name?: string;
@@ -171,7 +171,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       processing?: string;
       roast?: string;
       stock?: number;
-      weight?: number;
+      weight?: string;
       flavor_type?: string;
       flavor_tags?: { name: string }[];
       description?: string;
@@ -197,10 +197,13 @@ export async function updateProductHandler(req: Request, res: Response) {
       });
     }
 
-    // 商品編號理論上是唯一的，所以拿第一筆商品
     const product = products[0];
 
-    // 檢查 documentId 是否存在
+    console.log("📋 商品資料:", {
+      documentId: product.documentId,
+      pid: product.pid,
+    });
+
     if (!product.documentId) {
       console.error("❌ 警告：documentId 不存在，商品資料:", product);
       return res.status(500).json({
@@ -209,26 +212,53 @@ export async function updateProductHandler(req: Request, res: Response) {
       });
     }
 
-    const updateData: any = {
-      ...(name !== undefined ? { name } : {}),
-      ...(english_name !== undefined ? { english_name } : {}),
-      ...(price !== undefined ? { price } : {}),
-      ...(origin !== undefined ? { origin } : {}),
-      ...(processing !== undefined ? { processing } : {}),
-      ...(roast !== undefined ? { roast } : {}),
-      ...(stock !== undefined ? { stock } : {}),
-      ...(weight !== undefined ? { weight } : {}),
-      ...(flavor_type !== undefined ? { flavor_type } : {}),
-      ...(flavor_tags !== undefined ? { flavor_tags } : {}),
-      ...(description !== undefined ? { description } : {}),
-      ...(Array.isArray(imgIds) ? { img: imgIds } : {}), // 這行就是「刪圖」：把關聯改成保留的
-    };
+    // 準備更新資料
+    const updateData: Record<string, unknown> = {};
+
+    // 只加入有定義的欄位
+    if (name !== undefined) updateData.name = name;
+    if (english_name !== undefined) updateData.english_name = english_name;
+    if (price !== undefined) updateData.price = price;
+    if (origin !== undefined) updateData.origin = origin;
+    if (processing !== undefined) updateData.processing = processing;
+    if (roast !== undefined) updateData.roast = roast;
+    if (stock !== undefined) updateData.stock = stock;
+    if (weight !== undefined) updateData.weight = weight;
+    if (flavor_type !== undefined) updateData.flavor_type = flavor_type;
+    if (description !== undefined) updateData.description = description;
+
+    // 處理 flavor_tags（需要轉換成 Strapi 的 relation 格式）
+    if (flavor_tags !== undefined && Array.isArray(flavor_tags)) {
+      // 前端傳來的是 { name: "Sweet" } 格式
+      // 需要先查詢這些 tag 的 ID，然後關聯
+      const tagNames = flavor_tags.map((tag) => tag.name);
+
+      // 批次查詢所有 flavor tags
+      const allTags = await fetchStrapiData("flavor-tags", "*", 1, 100, {
+        fields: ["documentId", "name"],
+        filters: {
+          name: { $in: tagNames },
+        },
+      });
+
+      // 將 tag 關聯轉換為 documentId 陣列
+      const tagIds = allTags.map((tag: any) => tag.documentId);
+      updateData.flavor_tags = tagIds;
+    }
+
+    // 處理圖片關聯
+    if (Array.isArray(imgIds)) {
+      updateData.img = imgIds;
+    }
 
     // 處理 publishedAt（上下架狀態）
     if (publishedAt !== undefined) {
       updateData.publishedAt = publishedAt;
     }
 
+    console.log("📝 準備更新的資料:", updateData);
+
+    // 使用 putStrapiData（接受 documentId 參數）
     const updatedProduct = await putStrapiData(
       "products",
       product.documentId,
@@ -240,8 +270,16 @@ export async function updateProductHandler(req: Request, res: Response) {
       message: "商品更新成功",
       data: updatedProduct,
     });
-  } catch (error: unknown) {
-    return handleError(error, res, "更新產品失敗");
+  } catch (error: any) {
+    console.error(
+      "[updateProductHandler error]",
+      error?.response?.data ?? error,
+    );
+    return res.status(500).json({
+      success: false,
+      error: "更新商品失敗",
+      details: error?.message,
+    });
   }
 }
 
@@ -262,7 +300,7 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_tags,
       description,
       imgIds,
-      publishedAt, // 新增上下架狀態，預設為已上架
+      publishedAt,
     } = (req.body ?? {}) as {
       name: string;
       english_name: string;
@@ -272,7 +310,7 @@ export async function createProductHandler(req: Request, res: Response) {
       processing: string;
       roast: string;
       stock: number;
-      weight: number;
+      weight: string;
       flavor_type: string;
       flavor_tags: { name: string }[];
       description: string;
@@ -286,6 +324,7 @@ export async function createProductHandler(req: Request, res: Response) {
 
     // 檢查 pid 唯一
     const existed = await fetchStrapiData("products", "*", 1, 1, {
+      fields: ["pid"],
       filters: { pid: { $eq: pid } },
     });
 
@@ -296,8 +335,8 @@ export async function createProductHandler(req: Request, res: Response) {
       });
     }
 
-    // 建立資料（img 用 id 關聯）
-    const createData = {
+    // 準備建立資料
+    const createData: Record<string, unknown> = {
       name,
       english_name,
       pid,
@@ -308,14 +347,37 @@ export async function createProductHandler(req: Request, res: Response) {
       stock,
       weight,
       flavor_type,
-      flavor_tags,
       description,
-      ...(Array.isArray(imgIds) ? { img: imgIds } : {}), // Strapi media 關聯吃 id 陣列
       // 預設為已上架，除非明確設為 null
       publishedAt:
         publishedAt !== null ? publishedAt || new Date().toISOString() : null,
     };
 
+    // 處理 flavor_tags
+    if (flavor_tags && Array.isArray(flavor_tags)) {
+      const tagNames = flavor_tags.map((tag) => tag.name);
+
+      // 批次查詢所有 flavor tags
+      const allTags = await fetchStrapiData("flavor-tags", "*", 1, 100, {
+        fields: ["documentId", "name"],
+        filters: {
+          name: { $in: tagNames },
+        },
+      });
+
+      // 將 tag 關聯轉換為 documentId 陣列
+      const tagIds = allTags.map((tag: any) => tag.documentId);
+      createData.flavor_tags = tagIds;
+    }
+
+    // 處理圖片關聯
+    if (Array.isArray(imgIds) && imgIds.length > 0) {
+      createData.img = imgIds;
+    }
+
+    console.log("📝 準備建立的資料:", createData);
+
+    // 使用 createStrapiData（需要傳入 { data: {...} } 格式）
     const created = await createStrapiData("products", { data: createData });
 
     return res.status(201).json({
@@ -323,7 +385,15 @@ export async function createProductHandler(req: Request, res: Response) {
       message: "商品建立成功",
       data: created?.data ?? created,
     });
-  } catch (error: unknown) {
-    return handleError(error, res, "建立產品失敗");
+  } catch (error: any) {
+    console.error(
+      "[createProductHandler error]",
+      error?.response?.data ?? error,
+    );
+    return res.status(500).json({
+      success: false,
+      error: "建立商品失敗",
+      details: error?.message,
+    });
   }
 }

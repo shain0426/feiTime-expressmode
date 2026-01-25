@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import FormData from "form-data";
 import { strapiClient } from "@/services/dataService";
-import { handleError } from "@/utils/errorHandler";
 
 /**
  * 處理圖片上傳到 Strapi
@@ -17,10 +16,13 @@ export async function uploadImageHandler(req: Request, res: Response) {
       });
     }
 
+    // 類型斷言處理 express-fileupload 的檔案
+    const uploadedFiles = req.files as { [fieldname: string]: any };
+
     // 取得上傳的檔案 (支援多檔案上傳)
-    const files = Array.isArray(req.files.files)
-      ? req.files.files
-      : [req.files.files];
+    const files = Array.isArray(uploadedFiles.files)
+      ? uploadedFiles.files
+      : [uploadedFiles.files];
 
     // 建立 FormData 準備轉發給 Strapi
     const formData = new FormData();
@@ -44,7 +46,7 @@ export async function uploadImageHandler(req: Request, res: Response) {
       });
     });
 
-    console.log(`上傳 ${files.length} 個檔案到 Strapi`);
+    console.log(`📤 上傳 ${files.length} 個檔案到 Strapi`);
 
     // 使用 strapiClient 轉發給 Strapi 的 upload API
     const strapiResponse = await strapiClient.post("/api/upload", formData, {
@@ -60,8 +62,29 @@ export async function uploadImageHandler(req: Request, res: Response) {
 
     // 回傳上傳成功的檔案資訊
     return res.json(strapiResponse.data);
-  } catch (error: unknown) {
-    return handleError(error, res, "建立圖片失敗");
+  } catch (error: any) {
+    console.error("[uploadImageHandler error]", error?.response?.data ?? error);
+
+    // 處理不同類型的錯誤
+    let errorMessage = "上傳圖片失敗";
+    let statusCode = 500;
+
+    if (error.message?.includes("只支援 WebP 格式")) {
+      errorMessage = error.message;
+      statusCode = 400;
+    } else if (error.message?.includes("檔案大小超過限制")) {
+      errorMessage = error.message;
+      statusCode = 400;
+    } else if (error?.response?.data) {
+      errorMessage = error.response.data.error?.message || errorMessage;
+      statusCode = error.response.status || 500;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: error?.response?.data || error?.message,
+    });
   }
 }
 
@@ -92,7 +115,24 @@ export async function deleteImageHandler(req: Request, res: Response) {
       success: true,
       message: "圖片刪除成功",
     });
-  } catch (error: unknown) {
-    return handleError(error, res, "刪除圖片失敗");
+  } catch (error: any) {
+    console.error("[deleteImageHandler error]", error?.response?.data ?? error);
+
+    let errorMessage = "刪除圖片失敗";
+    let statusCode = 500;
+
+    if (error?.response?.status === 404) {
+      errorMessage = "找不到指定的圖片";
+      statusCode = 404;
+    } else if (error?.response?.data) {
+      errorMessage = error.response.data.error?.message || errorMessage;
+      statusCode = error.response.status || 500;
+    }
+
+    return res.status(statusCode).json({
+      success: false,
+      error: errorMessage,
+      details: error?.response?.data || error?.message,
+    });
   }
 }
