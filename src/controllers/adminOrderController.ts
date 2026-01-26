@@ -234,11 +234,13 @@ async function syncOrderLogisticsCore(order: any) {
   if (checkpoint === "delivered" && order.order_status !== "delivered") {
     const patch: any = {
       order_status: "delivered",
-      delivered_at: new Date().toISOString(), // 有欄位才留，沒有就刪掉
     };
 
     // ✅ 只有 COD 才用「送達＝付款完成」
-    if (order.payment_method === "cod" && order.payment_status !== "paid") {
+    if (
+      order.payment_method?.toLowerCase() === "cod" &&
+      order.payment_status !== "paid"
+    ) {
       patch.payment_status = "paid";
       patch.paid_at = new Date().toISOString();
     }
