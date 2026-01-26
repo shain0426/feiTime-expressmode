@@ -7,17 +7,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+//讀取 .env 環境變數，例如 GEMINI_API_KEY
+// IMPORTANT: dotenv 必須在其他 import 之前執行，確保 process.env 有值
+// 修正：將 routes 移到 dotenv.config() 之後
+dotenv_1.default.config();
+// 現在 import routes，內部的 dataService 就會讀到正確的 process.env.STRAPI_URL
 const index_1 = __importDefault(require("./routes/index"));
 const googleAuth_1 = __importDefault(require("./routes/googleAuth"));
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; //允許自簽憑證，但正式上線要拿掉！！！
-//讀取 .env 環境變數，例如 GEMINI_API_KEY
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 4000;
 //允許前端跨域請求 (支援本地開發和正式環境)
 const allowedOrigins = [
     "http://localhost:5173",
-    "http://localhost:5174",
     process.env.FRONTEND_URL,
 ].filter(Boolean);
 app.use((0, cors_1.default)({
@@ -46,8 +47,6 @@ app.use("/api", index_1.default);
 app.use("/api", googleAuth_1.default);
 //分享功能的route
 app.get("/share", (req, res) => {
-    console.log("收到分享請求！參數：", req.query);
-    res.setHeader("ngrok-skip-browser-warning", "true");
     const { name, img } = req.query;
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     if (!name || !img || img === "undefined") {
