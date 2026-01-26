@@ -85,65 +85,6 @@ export async function oneProductHandler(req: Request, res: Response) {
   }
 }
 
-// 推薦商品(處理法->風味類型)
-export async function recommendProductsHandler(req: Request, res: Response) {
-  try {
-    const { pid } = req.params;
-
-    // 先取得當前商品
-    const currentProducts = await fetchStrapiData("products", "*", 1, 1, {
-      fields: ["processing", "flavor_type"],
-      filters: {
-        pid: { $eq: pid },
-      },
-    });
-
-    if (!currentProducts || currentProducts.length === 0) {
-      return res.status(404).json({
-        error: "找不到此商品",
-      });
-    }
-
-    const currentProduct = currentProducts?.[0];
-
-    const { processing, flavor_type } = currentProduct;
-
-    // 第一優先：同 processing（最多 15）($ne排除當前商品)
-    const sameProcessing = await fetchStrapiData("products", "*", 1, 15, {
-      fields: ["name", "pid", "processing", "flavor_type"],
-      filters: {
-        processing: { $eq: processing },
-        pid: { $ne: pid },
-      },
-    });
-
-    // 如果已經滿 15，直接回傳
-    if (sameProcessing.length >= 15) {
-      return res.json({
-        data: sameProcessing,
-      });
-    }
-
-    // 第二優先：同 flavor_type ($ne排除當前商品及處理法推薦過的)
-    const remain = 15 - sameProcessing.length;
-
-    const sameFlavor = await fetchStrapiData("products", "*", 1, remain, {
-      fields: ["name", "pid", "processing", "flavor_type"],
-      filters: {
-        flavor_type: { $eq: flavor_type },
-        pid: { $ne: pid },
-        processing: { $ne: processing },
-      },
-    });
-
-    res.json({
-      data: [...sameProcessing, ...sameFlavor],
-    });
-  } catch (error: unknown) {
-    return handleError(error, res, "取得推薦產品失敗");
-  }
-}
-
 // 修改商品
 export async function updateProductHandler(req: Request, res: Response) {
   try {
