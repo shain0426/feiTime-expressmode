@@ -1,4 +1,4 @@
-import { createStrapiData } from "@/services/dataService";
+import { createStrapiData, fetchStrapiData } from "@/services/dataService";
 
 /**
  * 咖啡測驗結果資料結構
@@ -37,5 +37,28 @@ export const coffeeResultService = {
         user: payload.data.user || 22,
       },
     });
+  },
+
+  /**
+   * 根據用戶 ID 取得最新的咖啡測驗結果
+   * @param userId - 用戶 ID
+   * @returns 用戶最新的咖啡測驗結果
+   */
+  async getByUserId(userId: number) {
+    const data = await fetchStrapiData(
+      "coffee-results",
+      "*",
+      1,
+      1, // 只取最新一筆
+      {
+        filters: {
+          user: {
+            id: { $eq: userId }
+          }
+        },
+        sort: ["createdAt:desc"],
+      }
+    );
+    return data;
   },
 };

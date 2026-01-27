@@ -329,12 +329,12 @@ export const strapiPost = async (
   } catch (err: unknown) {
     const axiosError = err as {
       message?: string;
-      response?: { data?: { error?: { message?: string } } };
+      response?: { data?: { error?: { message?: string; details?: unknown } } };
     };
     // 詳細記錄錯誤，方便除錯 (Strapi 的報錯通常在 err.response.data)
     console.error(
       "❌ Strapi POST Error:",
-      axiosError.response?.data || axiosError.message,
+      JSON.stringify(axiosError.response?.data, null, 2) || axiosError.message,
     );
     throw new Error(
       axiosError.response?.data?.error?.message || "資料新增失敗",

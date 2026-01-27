@@ -13,7 +13,7 @@ import {
   createProductHandler,
 } from "@/controllers/adminProductController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
-import { getRefineAdvice, getRefineReport } from "@/controllers/refineAiController";
+import { getRefineAdvice, getRefineReport, saveBrewLog, getBrewLogs } from "@/controllers/refineAiController";
 import { getFairySuggestion, chatWithFairy } from "@/controllers/coffeeFairyController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
@@ -39,7 +39,7 @@ import {
 } from "@/controllers/adminOrderController";
 import { userController } from "@/controllers/adminUserController";
 import { requireAdmin } from "@/middlewares/requireAdmin";
-import { saveCoffeeResultHandler } from "@/controllers/coffeeResultController";
+import { saveCoffeeResultHandler, getCoffeeResultHandler } from "@/controllers/coffeeResultController";
 import {
   getCarts,
   orderCome,
@@ -86,6 +86,8 @@ const fileUploadMiddleware = fileUpload({
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
 router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
+router.post("/gemini/refine/save-log", saveBrewLog); // 保存沖煮紀錄卡片
+router.get("/gemini/refine/logs", getBrewLogs); // 取得用戶沖煮記錄
 router.post("/gemini/fairy/suggest", getFairySuggestion); // 咖啡精靈建議 (幫我選/調整)
 router.post("/gemini/fairy/chat", chatWithFairy); // 咖啡精靈對話
 
@@ -103,6 +105,7 @@ router.get("/product-detail/:pid/recommendations", recommendProductsHandler); //
 router.get("/featured/products", featuredProductHandler); // 首頁：精選產品
 router.post("/quiz/calculate", calculateQuizHandler); //Coffee ID 測驗算分
 router.post("/coffee-results", saveCoffeeResultHandler);
+router.get("/coffee-results", getCoffeeResultHandler); // 取得用戶測驗結果
 router.get("/get-cart", getCarts);
 router.post("/orders/checkout", orderCome);
 router.get("/order/giveme", orderGet);

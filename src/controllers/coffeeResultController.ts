@@ -20,3 +20,20 @@ export const saveCoffeeResultHandler = async (req: Request, res: Response) => {
     return handleError(error, res, "內部伺服器錯誤");
   }
 };
+
+export const getCoffeeResultHandler = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    const data = await coffeeResultService.getByUserId(Number(userId));
+
+    return res.status(200).json({ data });
+  } catch (error) {
+    console.error("[Controller Error] 取得測驗結果失敗:", error);
+    return handleError(error, res, "取得測驗結果失敗");
+  }
+};
