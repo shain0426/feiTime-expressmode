@@ -13,10 +13,8 @@ import {
   createProductHandler,
 } from "@/controllers/adminProductController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
-import {
-  getRefineAdvice,
-  getRefineReport,
-} from "@/controllers/refineAiController";
+import { getRefineAdvice, getRefineReport } from "@/controllers/refineAiController";
+import { getFairySuggestion, chatWithFairy } from "@/controllers/coffeeFairyController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
   flavorMusicHandler,
@@ -88,6 +86,8 @@ const fileUploadMiddleware = fileUpload({
 router.post("/gemini/chat", coffeeAssistantHandler); // 咖啡小助手聊天
 router.post("/gemini/refine/advice", getRefineAdvice); // Refine Simulator 即時建議
 router.post("/gemini/refine/report", getRefineReport); // Refine Simulator 沖煮報告
+router.post("/gemini/fairy/suggest", getFairySuggestion); // 咖啡精靈建議 (幫我選/調整)
+router.post("/gemini/fairy/chat", chatWithFairy); // 咖啡精靈對話
 
 // === 首頁-風味音樂推薦系統 ===
 router.post("/music/flavor", flavorMusicHandler); // 根據風味推薦音樂
@@ -160,11 +160,13 @@ router.get("/admin-users/:id", requireAdmin, userController.getUserById); // 單
 router.put("/admin-users/:id", requireAdmin, userController.updateUser); // 更新單一使用者資訊
 
 // === 購物車相關 ===
+import { cartRecommendationHandler } from "@/controllers/cartRecommendationController";
 router.get("/cart", getCart);
 router.post("/cart", addToCart);
 router.put("/cart/:documentId", updateCartItem);
 router.delete("/cart/:documentId", removeCartItem);
 router.delete("/cart", clearUserCart);
+router.post("/cart/recommendations", cartRecommendationHandler); // AI 推薦
 
 // === 會員相關 ===
 router.put("/users/:userId", UpdateInfo); // 更新會員資料
