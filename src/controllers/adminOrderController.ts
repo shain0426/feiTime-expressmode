@@ -215,41 +215,50 @@ export async function updateOrderHandler(req: Request, res: Response) {
 
 // 抓取Track.tw 最新資料，同步訂單狀態
 async function syncOrderLogisticsCore(order: any) {
-  if (!order.UUID || !order.documentId) return { updated: false, order };
-
-  // 1. 抓取 Track.tw 最新資料
-  const tracking = await getTrackingByUuid(order.UUID);
-  const histories = tracking?.package_history ?? [];
-
-  if (histories.length === 0) return { updated: false, order, tracking };
-
-  // 2. 找出最新的一筆 (修正日期排序問題)
-  const latest = [...histories].sort(
-    (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
-  )[0];
-
-  const checkpoint = latest?.checkpoint_status?.toLowerCase();
-
-  // 3. 判斷是否需要更新狀態為 delivered
-  if (checkpoint === "delivered" && order.order_status !== "delivered") {
-    const patch: any = {
-      order_status: "delivered",
-    };
-
-    // ✅ 只有 COD 才用「送達＝付款完成」
-    if (
-      order.payment_method?.toLowerCase() === "cod" &&
-      order.payment_status !== "paid"
-    ) {
-      patch.payment_status = "paid";
-      patch.paid_at = new Date().toISOString();
-    }
-
-    const updated = await putStrapiData("orders", order.documentId, patch);
-    return { updated: true, order: updated, latest, tracking };
+  if (!order.UUID || !order.documentId) {
+    return { updated: false, order };
   }
 
-  return { updated: false, order, latest, tracking };
+  try {
+    // 1. 取得 Track.tw 最新資料
+    const tracking = await getTrackingByUuid(order.UUID);
+    const histories = tracking?.package_history ?? [];
+
+    if (histories.length === 0) {
+      return { updated: false, order, tracking };
+    }
+
+    // 2. 找出最新的物流紀錄
+    const latest = [...histories].sort(
+      (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+    )[0];
+
+    const checkpoint = latest?.checkpoint_status?.toLowerCase();
+
+    // 3. 判斷是否需要更新狀態為 delivered
+    if (checkpoint === "delivered" && order.order_status !== "delivered") {
+      const patch: any = {
+        order_status: "delivered",
+      };
+
+      // 只有 COD 才用「送達＝付款完成」
+      if (
+        order.payment_method?.toLowerCase() === "cod" &&
+        order.payment_status !== "paid"
+      ) {
+        patch.payment_status = "paid";
+        patch.paid_at = new Date().toISOString();
+      }
+
+      const updated = await putStrapiData("orders", order.documentId, patch);
+      return { updated: true, order: updated, latest, tracking };
+    }
+
+    return { updated: false, order, latest, tracking };
+  } catch (error) {
+    console.error("❌ 同步物流狀態失敗:", error);
+    return { updated: false, order, error };
+  }
 }
 
 // 批量更新物流狀態
