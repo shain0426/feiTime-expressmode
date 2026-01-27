@@ -32,7 +32,7 @@ export async function getRefineAdvice(req: Request, res: Response) {
         }];
 
         const text = await geminiText(messages, {
-            model: "gemini-3-flash-preview", // User specified
+            model: "gemini-2.5-flash", // AI Coach 即時指導
         });
 
         // 嘗試解析 JSON (Gemini 有時會回傳 markdown code block)
