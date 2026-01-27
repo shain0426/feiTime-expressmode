@@ -91,8 +91,8 @@ const getGeminiRecommendation = async (
     const messages: GeminiMessage[] = [{ role: "user", content: prompt }];
 
     const responseText = await geminiText(messages, {
-      model: "gemini-1.5-flash",
-      maxRetries: 1,
+      model: "gemini-2.5-flash",
+      maxRetries: 2,
     });
 
     const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
@@ -216,7 +216,7 @@ export const flavorMusicHandler = async (
     );
 
     // 1. 嘗試根據 AI 關鍵字搜尋
-    let videos = await searchMultipleKeywords(geminiRec.searches, 3);
+    let videos = await searchMultipleKeywords(geminiRec.searches, 10);
 
     // 2. 如果因為過濾太嚴格找不到，自動執行「保底策略」
     if (videos.length === 0) {
@@ -231,7 +231,7 @@ export const flavorMusicHandler = async (
       for (const kw of fallbackKeywords) {
         const fallbackResults = await searchYouTubeByKeyword(kw, 10);
         if (fallbackResults.length > 0) {
-          videos = fallbackResults.slice(0, 3);
+          videos = fallbackResults.slice(0, 10);
           break;
         }
       }
@@ -264,7 +264,7 @@ export const randomMusicHandler = async (
       currentFlavorName || "經典",
       "refresh",
     );
-    const videos = await searchMultipleKeywords(geminiRec.searches, 3);
+    const videos = await searchMultipleKeywords(geminiRec.searches, 10);
 
     res.status(200).json({
       success: true,
