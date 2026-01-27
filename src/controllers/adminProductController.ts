@@ -103,7 +103,6 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_tags,
       description,
       imgIds,
-      publishedAt,
     } = (req.body ?? {}) as {
       name?: string;
       english_name?: string;
@@ -117,7 +116,6 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_tags?: { name: string }[];
       description?: string;
       imgIds?: number[];
-      publishedAt?: string | null;
     };
 
     if (!pid) {
@@ -192,11 +190,6 @@ export async function updateProductHandler(req: Request, res: Response) {
       updateData.img = imgIds;
     }
 
-    // 處理 publishedAt（上下架狀態）
-    if (publishedAt !== undefined) {
-      updateData.publishedAt = publishedAt;
-    }
-
     console.log("📝 準備更新的資料:", updateData);
 
     // 使用 putStrapiData（接受 documentId 參數）
@@ -241,7 +234,12 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_tags,
       description,
       imgIds,
-      publishedAt,
+      acidity,
+      sweetness,
+      body,
+      aftertaste,
+      clarity,
+      popularity,
     } = (req.body ?? {}) as {
       name: string;
       english_name: string;
@@ -256,7 +254,12 @@ export async function createProductHandler(req: Request, res: Response) {
       flavor_tags: { name: string }[];
       description: string;
       imgIds?: number[];
-      publishedAt?: string | null;
+      acidity: number;
+      sweetness: number;
+      body: number;
+      aftertaste: number;
+      clarity: number;
+      popularity: number;
     };
 
     if (!pid || !name) {
@@ -289,9 +292,12 @@ export async function createProductHandler(req: Request, res: Response) {
       weight,
       flavor_type,
       description,
-      // 預設為已上架，除非明確設為 null
-      publishedAt:
-        publishedAt !== null ? publishedAt || new Date().toISOString() : null,
+      acidity,
+      sweetness,
+      body,
+      aftertaste,
+      clarity,
+      popularity,
     };
 
     // 處理 flavor_tags
@@ -331,6 +337,8 @@ export async function createProductHandler(req: Request, res: Response) {
       "[createProductHandler error]",
       error?.response?.data ?? error,
     );
+    console.log("❌ Strapi response data:", error.response?.data);
+    console.log("❌ Strapi status:", error.response?.status);
     return res.status(500).json({
       success: false,
       error: "建立商品失敗",
