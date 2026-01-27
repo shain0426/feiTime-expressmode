@@ -10,7 +10,7 @@ export const strictAccountLimiter = rateLimit({
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: { error: { message: "操作次數過多，請一小時後再試" } },
   standardHeaders: true,
   legacyHeaders: false,
