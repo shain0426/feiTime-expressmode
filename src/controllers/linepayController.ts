@@ -9,18 +9,12 @@ import { handleError } from "@/utils/errorHandler";
 const LINEPAY_CHANNEL_ID = process.env.LINEPAY_CHANNEL_ID;
 const LINEPAY_CHANNEL_SECRET = process.env.LINEPAY_CHANNEL_SECRET;
 const LINEPAY_SITE = process.env.LINEPAY_DEV; // linepay測試網址
-const FEITIME = process.env.MAE; // 前端網址
+const FEITIME = process.env.FRONTEND_URL; // 前端部屬網址
+// const FEITIME = process.env.MAE;  前端測試網址
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-interface LinePayProduct {
-  id: string | number;
-  name: string;
-  quantity: number;
-  price: number;
-}
 
 interface CartProduct {
   product: {
