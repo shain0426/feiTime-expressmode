@@ -15,7 +15,7 @@ export async function productHandler(req: Request, res: Response) {
     const sort = req.query.sort as string | string[]; // sort可能是陣列
 
     const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 100;
+    const pageSize = Number(req.query.pageSize) || 24;
 
     // 格式必須是：{ filters: { 欄位名(篩選什麼): { 運算子(怎麼篩選): 值 } } }
     const options = {
@@ -41,6 +41,7 @@ export async function productHandler(req: Request, res: Response) {
       // 最後面的sort 是從網址擷取下來的值 是要排序的東西和方式 例如 "price:desc"
       // 網址是 ?sort=price:desc 時 req.query.sort 會得到一個 字串
       // 網址是 ?sort=price:desc&sort=popularity:asc 時  後端 req.query.sort 會得到一個 陣列
+      includeMeta: true,
     };
 
     const data = await fetchStrapiData(
@@ -48,7 +49,7 @@ export async function productHandler(req: Request, res: Response) {
       "*",
       page,
       pageSize,
-      options
+      options,
     );
 
     res.json(data);
