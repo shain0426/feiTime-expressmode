@@ -118,7 +118,7 @@ async function searchCoffeeForAssistant(query: SearchQueryParams) {
     {
       filters,
       sort: [query.sortBy || "price:desc"],
-    }
+    },
   );
 
   return query.limit ? products.slice(0, query.limit) : products;
@@ -128,7 +128,7 @@ async function searchCoffeeForAssistant(query: SearchQueryParams) {
  * 從對話歷史中提取用戶偏好
  */
 function extractPreferencesFromHistory(
-  conversationHistory: GeminiMessage[]
+  conversationHistory: GeminiMessage[],
 ): UserPreferences {
   const prefs: UserPreferences = {};
   const allText = conversationHistory
@@ -274,7 +274,18 @@ function extractPreferencesFromHistory(
   // 提取產地（根據實際產品資料）
   const origins = [
     // 非洲產區
-    { english: "Ethiopia", chinese: ["衣索比亞", "埃塞俄比亞", "衣索", "耶加", "古吉", "西達摩", "哈拉"] },
+    {
+      english: "Ethiopia",
+      chinese: [
+        "衣索比亞",
+        "埃塞俄比亞",
+        "衣索",
+        "耶加",
+        "古吉",
+        "西達摩",
+        "哈拉",
+      ],
+    },
     { english: "Kenya", chinese: ["肯亞", "肯尼亞"] },
     { english: "Rwanda", chinese: ["盧安達", "盧旺達"] },
     { english: "Burundi", chinese: ["布隆迪", "蒲隆地"] },
@@ -290,7 +301,10 @@ function extractPreferencesFromHistory(
     { english: "Vietnam", chinese: ["越南", "羅布斯塔"] },
     { english: "India", chinese: ["印度", "莫索爾", "馬拉巴"] },
     { english: "Thailand", chinese: ["泰國", "清邁"] },
-    { english: "Papua New Guinea", chinese: ["巴布亞", "紐幾內亞", "新幾內亞", "png"] },
+    {
+      english: "Papua New Guinea",
+      chinese: ["巴布亞", "紐幾內亞", "新幾內亞", "png"],
+    },
   ];
 
   for (const { english, chinese } of origins) {
@@ -311,7 +325,10 @@ function extractPreferencesFromHistory(
     { keywords: ["bourbon", "波旁", "卡杜艾", "catuai"], name: "Bourbon" },
     { keywords: ["peaberry", "皮貝瑞", "圓豆"], name: "Peaberry" },
     // 衣索比亞產區
-    { keywords: ["耶加雪菲", "耶加", "yirgacheffe", "yirga"], name: "Yirgacheffe" },
+    {
+      keywords: ["耶加雪菲", "耶加", "yirgacheffe", "yirga"],
+      name: "Yirgacheffe",
+    },
     { keywords: ["古吉", "guji"], name: "Guji" },
     { keywords: ["西達摩", "sidamo", "sidama"], name: "Sidamo" },
     { keywords: ["科契爾", "kochere"], name: "Kochere" },
@@ -396,7 +413,7 @@ function extractPreferencesFromHistory(
 function analyzeConversationContext(conversationHistory: GeminiMessage[]) {
   // 計算 AI 已經詢問的次數
   const aiQuestionCount = conversationHistory.filter(
-    (msg) => msg.role === "assistant" && msg.content.includes("?")
+    (msg) => msg.role === "assistant" && msg.content.includes("?"),
   ).length;
 
   // 獲取所有用戶訊息
@@ -412,7 +429,7 @@ function analyzeConversationContext(conversationHistory: GeminiMessage[]) {
       msg.includes("都可以") ||
       msg.includes("快點") ||
       msg.includes("直接推薦") ||
-      msg.includes("給我推薦")
+      msg.includes("給我推薦"),
   );
 
   // 檢測是否為專家型客戶（使用專業術語）
@@ -431,7 +448,7 @@ function analyzeConversationContext(conversationHistory: GeminiMessage[]) {
     "莊園",
   ];
   const isExpert = userMessages.some((msg) =>
-    expertKeywords.some((kw) => msg.includes(kw))
+    expertKeywords.some((kw) => msg.includes(kw)),
   );
 
   // 檢查 AI 已詢問過的主題
@@ -440,17 +457,17 @@ function analyzeConversationContext(conversationHistory: GeminiMessage[]) {
     .map((msg) => msg.content.toLowerCase());
 
   const askedAboutAcidity = assistantMessages.some(
-    (msg) => msg.includes("酸度") || msg.includes("明亮")
+    (msg) => msg.includes("酸度") || msg.includes("明亮"),
   );
 
   const askedAboutPrice = assistantMessages.some(
     (msg) =>
-      msg.includes("預算") || msg.includes("價位") || msg.includes("價格")
+      msg.includes("預算") || msg.includes("價位") || msg.includes("價格"),
   );
 
   const askedAboutRoast = assistantMessages.some(
     (msg) =>
-      msg.includes("烘焙") || msg.includes("淺焙") || msg.includes("深焙")
+      msg.includes("烘焙") || msg.includes("淺焙") || msg.includes("深焙"),
   );
 
   return {
@@ -469,7 +486,7 @@ function analyzeConversationContext(conversationHistory: GeminiMessage[]) {
 function determineConversationStage(
   question: string,
   conversationHistory: GeminiMessage[],
-  prefs: UserPreferences
+  prefs: UserPreferences,
 ): ConversationStage {
   const lowerQuestion = question.toLowerCase();
 
@@ -619,7 +636,7 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
     const stage = determineConversationStage(
       question,
       conversationHistory,
-      prefs
+      prefs,
     );
 
     let productContext = "";
@@ -667,7 +684,7 @@ export async function coffeeAssistantHandler(req: Request, res: Response) {
                 // 觸發重新判斷階段，這次會進入 READY_TO_RECOMMEND
               },
             } as Request,
-            res
+            res,
           );
         }
 
@@ -767,7 +784,7 @@ ${
 【當前階段】推薦產品
 
 根據顧客偏好(${JSON.stringify(
-                prefs
+                prefs,
               )}),從上方「店內商品」中推薦2-3款最適合的產品。
 
 ${
@@ -809,9 +826,8 @@ ${recommendInstruction}
               relaxedQuery.maxPrice += 200;
             }
 
-            const alternativeProducts = await searchCoffeeForAssistant(
-              relaxedQuery
-            );
+            const alternativeProducts =
+              await searchCoffeeForAssistant(relaxedQuery);
 
             if (alternativeProducts && alternativeProducts.length > 0) {
               productContext = `\n\n【店內相近商品: ${alternativeProducts.length}款】\n`;
@@ -939,10 +955,10 @@ ${stageInstruction}
       },
     });
   } catch (err) {
-    console.error("咖啡小助手 API 錯誤:", err);
+    console.error("咖啡小精靈 API 錯誤:", err);
     res.status(500).json({
-      error: "抱歉,AI 助手目前遇到問題,請稍後再試",
-      answer: "抱歉,我現在有點忙不過來 😅 請稍後再試,或直接聯繫我們的客服!",
+      error: "抱歉，咖啡小精靈咕嚕咕嚕了，請稍後再試",
+      answer: "抱歉，我現在有點忙不過來 😅 請稍後再試， 或直接聯繫我們的客服!",
     });
   }
 }
