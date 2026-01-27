@@ -13,7 +13,7 @@ export async function ProductListHandler(req: Request, res: Response) {
     const sort = req.query.sort as string | string[];
     const result = await fetchStrapiData("products", "*", page, pageSize, {
       fields: [
-        "documentId", // Add documentId
+        "documentId",
         "name",
         "english_name",
         "pid",
@@ -33,17 +33,12 @@ export async function ProductListHandler(req: Request, res: Response) {
     console.log("📦 後端拿到資料筆數:", result?.length);
     console.log("📦 第一筆資料範例:", result?.[0]);
 
-    // 回傳符合前端期望的格式
     res.json({
       data: result.data || [],
       meta: result.meta, // 包含 pagination 資訊
     });
-
-    // console.log("後端拿到資料", data);
-    // 原樣回傳給前端
-    // res.json(data);
   } catch (error: unknown) {
-    return handleError(error, res, "取得產品失敗");
+    return handleError(error, res, "取得產品列表失敗");
   }
 }
 
@@ -53,7 +48,7 @@ export async function oneProductHandler(req: Request, res: Response) {
 
     const data = await fetchStrapiData("products", "*", 1, 1, {
       fields: [
-        "documentId", // Add documentId
+        "documentId",
         "name",
         "english_name",
         "pid",
@@ -73,7 +68,10 @@ export async function oneProductHandler(req: Request, res: Response) {
 
     if (!data || data.length === 0) {
       return res.status(404).json({
-        error: "找不到此商品",
+        success: false,
+        error: {
+          message: "找不到此商品",
+        },
       });
     }
 
@@ -85,7 +83,7 @@ export async function oneProductHandler(req: Request, res: Response) {
   }
 }
 
-// 修改商品
+// 更新商品內容
 export async function updateProductHandler(req: Request, res: Response) {
   try {
     const { pid } = req.params;
@@ -100,7 +98,6 @@ export async function updateProductHandler(req: Request, res: Response) {
       stock,
       weight,
       flavor_type,
-      flavor_tags,
       description,
       imgIds,
     } = (req.body ?? {}) as {
@@ -113,13 +110,17 @@ export async function updateProductHandler(req: Request, res: Response) {
       stock?: number;
       weight?: string;
       flavor_type?: string;
-      flavor_tags?: { name: string }[];
       description?: string;
       imgIds?: number[];
     };
 
     if (!pid) {
-      return res.status(400).json({ success: false, error: "缺少 pid" });
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "缺少 pid",
+        },
+      });
     }
 
     // 用前端傳來的 pid 去資料庫查詢商品（取得 documentId )
@@ -132,7 +133,10 @@ export async function updateProductHandler(req: Request, res: Response) {
 
     if (!products || products.length === 0) {
       return res.status(404).json({
-        error: "找不到此商品",
+        success: false,
+        error: {
+          message: "找不到此商品",
+        },
       });
     }
 
@@ -146,8 +150,11 @@ export async function updateProductHandler(req: Request, res: Response) {
     if (!product.documentId) {
       console.error("❌ 警告：documentId 不存在，商品資料:", product);
       return res.status(500).json({
-        error: "商品缺少 documentId",
-        product: product,
+        success: false,
+        error: {
+          message: "商品缺少 documentId",
+          details: product,
+        },
       });
     }
 
@@ -166,25 +173,6 @@ export async function updateProductHandler(req: Request, res: Response) {
     if (flavor_type !== undefined) updateData.flavor_type = flavor_type;
     if (description !== undefined) updateData.description = description;
 
-    // 處理 flavor_tags（需要轉換成 Strapi 的 relation 格式）
-    if (flavor_tags !== undefined && Array.isArray(flavor_tags)) {
-      // 前端傳來的是 { name: "Sweet" } 格式
-      // 需要先查詢這些 tag 的 ID，然後關聯
-      const tagNames = flavor_tags.map((tag) => tag.name);
-
-      // 批次查詢所有 flavor tags
-      const allTags = await fetchStrapiData("flavor-tags", "*", 1, 100, {
-        fields: ["documentId", "name"],
-        filters: {
-          name: { $in: tagNames },
-        },
-      });
-
-      // 將 tag 關聯轉換為 documentId 陣列
-      const tagIds = allTags.map((tag: any) => tag.documentId);
-      updateData.flavor_tags = tagIds;
-    }
-
     // 處理圖片關聯
     if (Array.isArray(imgIds)) {
       updateData.img = imgIds;
@@ -192,7 +180,7 @@ export async function updateProductHandler(req: Request, res: Response) {
 
     console.log("📝 準備更新的資料:", updateData);
 
-    // 使用 putStrapiData（接受 documentId 參數）
+    // 更新商品
     const updatedProduct = await putStrapiData(
       "products",
       product.documentId,
@@ -204,16 +192,8 @@ export async function updateProductHandler(req: Request, res: Response) {
       message: "商品更新成功",
       data: updatedProduct,
     });
-  } catch (error: any) {
-    console.error(
-      "[updateProductHandler error]",
-      error?.response?.data ?? error,
-    );
-    return res.status(500).json({
-      success: false,
-      error: "更新商品失敗",
-      details: error?.message,
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "更新商品失敗");
   }
 }
 
@@ -231,7 +211,6 @@ export async function createProductHandler(req: Request, res: Response) {
       stock,
       weight,
       flavor_type,
-      flavor_tags,
       description,
       imgIds,
       acidity,
@@ -251,7 +230,6 @@ export async function createProductHandler(req: Request, res: Response) {
       stock: number;
       weight: string;
       flavor_type: string;
-      flavor_tags: { name: string }[];
       description: string;
       imgIds?: number[];
       acidity: number;
@@ -262,11 +240,47 @@ export async function createProductHandler(req: Request, res: Response) {
       popularity: number;
     };
 
+    // 驗證必填欄位
     if (!pid || !name) {
-      return res.status(400).json({ success: false, error: "pid / name 必填" });
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "pid / name 必填",
+        },
+      });
     }
 
-    // 檢查 pid 唯一
+    // 驗證圖片必填
+    if (!imgIds || !Array.isArray(imgIds) || imgIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "請至少上傳一張商品圖片",
+        },
+      });
+    }
+
+    // 驗證數值欄位
+    if (price < 0 || stock < 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "價格和庫存不能為負數",
+        },
+      });
+    }
+
+    // 驗證描述長度
+    if (description.length < 10 || description.length > 300) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "商品描述需在 10-300 字之間",
+        },
+      });
+    }
+
+    // 檢查 pid 唯一性
     const existed = await fetchStrapiData("products", "*", 1, 1, {
       fields: ["pid"],
       filters: { pid: { $eq: pid } },
@@ -275,7 +289,9 @@ export async function createProductHandler(req: Request, res: Response) {
     if (existed?.length) {
       return res.status(409).json({
         success: false,
-        error: `pid 已存在：${pid}`,
+        error: {
+          message: `pid 已存在：${pid}`,
+        },
       });
     }
 
@@ -298,33 +314,12 @@ export async function createProductHandler(req: Request, res: Response) {
       aftertaste,
       clarity,
       popularity,
+      img: imgIds,
     };
-
-    // 處理 flavor_tags
-    if (flavor_tags && Array.isArray(flavor_tags)) {
-      const tagNames = flavor_tags.map((tag) => tag.name);
-
-      // 批次查詢所有 flavor tags
-      const allTags = await fetchStrapiData("flavor-tags", "*", 1, 100, {
-        fields: ["documentId", "name"],
-        filters: {
-          name: { $in: tagNames },
-        },
-      });
-
-      // 將 tag 關聯轉換為 documentId 陣列
-      const tagIds = allTags.map((tag: any) => tag.documentId);
-      createData.flavor_tags = tagIds;
-    }
-
-    // 處理圖片關聯
-    if (Array.isArray(imgIds) && imgIds.length > 0) {
-      createData.img = imgIds;
-    }
 
     console.log("📝 準備建立的資料:", createData);
 
-    // 使用 createStrapiData（需要傳入 { data: {...} } 格式）
+    // 新增商品
     const created = await createStrapiData("products", { data: createData });
 
     return res.status(201).json({
@@ -332,17 +327,7 @@ export async function createProductHandler(req: Request, res: Response) {
       message: "商品建立成功",
       data: created?.data ?? created,
     });
-  } catch (error: any) {
-    console.error(
-      "[createProductHandler error]",
-      error?.response?.data ?? error,
-    );
-    console.log("❌ Strapi response data:", error.response?.data);
-    console.log("❌ Strapi status:", error.response?.status);
-    return res.status(500).json({
-      success: false,
-      error: "建立商品失敗",
-      details: error?.message,
-    });
+  } catch (error: unknown) {
+    return handleError(error, res, "建立商品失敗");
   }
 }
