@@ -13,8 +13,16 @@ import {
   createProductHandler,
 } from "@/controllers/adminProductController";
 import { coffeeAssistantHandler } from "@/controllers/coffeeAssistantController";
-import { getRefineAdvice, getRefineReport, saveBrewLog, getBrewLogs } from "@/controllers/refineAiController";
-import { getFairySuggestion, chatWithFairy } from "@/controllers/coffeeFairyController";
+import {
+  getRefineAdvice,
+  getRefineReport,
+  saveBrewLog,
+  getBrewLogs,
+} from "@/controllers/refineAiController";
+import {
+  getFairySuggestion,
+  chatWithFairy,
+} from "@/controllers/coffeeFairyController";
 import { featuredProductHandler } from "@/controllers/featuredProductController";
 import {
   flavorMusicHandler,
@@ -39,7 +47,10 @@ import {
 } from "@/controllers/adminOrderController";
 import { userController } from "@/controllers/adminUserController";
 import { requireAdmin } from "@/middlewares/requireAdmin";
-import { saveCoffeeResultHandler, getCoffeeResultHandler } from "@/controllers/coffeeResultController";
+import {
+  saveCoffeeResultHandler,
+  getCoffeeResultHandler,
+} from "@/controllers/coffeeResultController";
 import {
   getCarts,
   orderCome,
@@ -63,22 +74,13 @@ import {
 import { UpdateInfo } from "@/controllers/memberController";
 import { getMemberOrders } from "@/controllers/memberOrderController";
 // 上傳圖片相關
-import fileUpload from "express-fileupload";
 import {
   uploadImageHandler,
   deleteImageHandler,
 } from "@/controllers/uploadController";
+import { fileUploadMiddleware } from "@/middlewares/uploadMiddleware";
 
 const router = Router();
-
-// 上傳圖片中間件
-const fileUploadMiddleware = fileUpload({
-  limits: { fileSize: 5 * 1024 * 1024 }, // 限制 5MB
-  abortOnLimit: true,
-  responseOnLimit: "檔案大小超過限制 (最大 5MB)",
-  useTempFiles: false, // 不使用暫存檔案
-  debug: process.env.NODE_ENV === "development",
-});
 
 // 所有API都放在這裡管理
 
@@ -131,7 +133,12 @@ router.get("/admin-products/:pid", requireAdmin, oneProductHandler); // 單一�
 router.put("/admin-products/:pid", requireAdmin, updateProductHandler); // 更新單一產品資訊
 router.post("/admin-products", requireAdmin, createProductHandler); // 新增單一產品資訊
 // ===== 圖片上傳相關路由 =====
-router.post("/admin-products/upload", fileUploadMiddleware, uploadImageHandler); // 上傳圖片
+router.post(
+  "/admin-products/upload",
+  requireAdmin,
+  fileUploadMiddleware,
+  uploadImageHandler,
+); // 上傳圖片
 router.delete("/admin-products/upload/:id", deleteImageHandler); // 刪除圖片
 
 // === 註冊相關 ===

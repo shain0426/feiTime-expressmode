@@ -6,6 +6,102 @@ import {
 } from "@/services/dataService";
 import { handleError } from "@/utils";
 
+// ========== 類型定義 ==========
+
+interface Product {
+  documentId?: string;
+  name: string;
+  english_name: string;
+  pid: string;
+  price: number;
+  origin: string;
+  processing: string;
+  roast: string;
+  stock: number;
+  flavor_type: string;
+  description: string;
+  weight: string;
+  img?: number[];
+  acidity?: number;
+  sweetness?: number;
+  body?: number;
+  aftertaste?: number;
+  clarity?: number;
+  popularity?: number;
+}
+
+interface UpdateProductBody {
+  name?: string;
+  english_name?: string;
+  price?: number;
+  origin?: string;
+  processing?: string;
+  roast?: string;
+  stock?: number;
+  weight?: string;
+  flavor_type?: string;
+  description?: string;
+  imgIds?: number[];
+}
+
+interface CreateProductBody {
+  name: string;
+  english_name: string;
+  pid: string;
+  price: number;
+  origin: string;
+  processing: string;
+  roast: string;
+  stock: number;
+  weight: string;
+  flavor_type: string;
+  description: string;
+  imgIds?: number[];
+  acidity: number;
+  sweetness: number;
+  body: number;
+  aftertaste: number;
+  clarity: number;
+  popularity: number;
+}
+
+interface ProductUpdateData extends Record<string, unknown> {
+  name?: string;
+  english_name?: string;
+  price?: number;
+  origin?: string;
+  processing?: string;
+  roast?: string;
+  stock?: number;
+  weight?: string;
+  flavor_type?: string;
+  description?: string;
+  img?: number[];
+}
+
+interface ProductCreateData extends Record<string, unknown> {
+  name: string;
+  english_name: string;
+  pid: string;
+  price: number;
+  origin: string;
+  processing: string;
+  roast: string;
+  stock: number;
+  weight: string;
+  flavor_type: string;
+  description: string;
+  acidity: number;
+  sweetness: number;
+  body: number;
+  aftertaste: number;
+  clarity: number;
+  popularity: number;
+  img: number[];
+}
+
+// ========== Handler 函數 ==========
+
 export async function ProductListHandler(req: Request, res: Response) {
   try {
     const page = Number(req.query.page) || 1;
@@ -100,19 +196,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       flavor_type,
       description,
       imgIds,
-    } = (req.body ?? {}) as {
-      name?: string;
-      english_name?: string;
-      price?: number;
-      origin?: string;
-      processing?: string;
-      roast?: string;
-      stock?: number;
-      weight?: string;
-      flavor_type?: string;
-      description?: string;
-      imgIds?: number[];
-    };
+    } = (req.body ?? {}) as UpdateProductBody;
 
     if (!pid) {
       return res.status(400).json({
@@ -140,7 +224,7 @@ export async function updateProductHandler(req: Request, res: Response) {
       });
     }
 
-    const product = products[0];
+    const product = products[0] as Product;
 
     console.log("📋 商品資料:", {
       documentId: product.documentId,
@@ -159,7 +243,7 @@ export async function updateProductHandler(req: Request, res: Response) {
     }
 
     // 準備更新資料
-    const updateData: Record<string, unknown> = {};
+    const updateData: ProductUpdateData = {};
 
     // 只加入有定義的欄位
     if (name !== undefined) updateData.name = name;
@@ -219,26 +303,7 @@ export async function createProductHandler(req: Request, res: Response) {
       aftertaste,
       clarity,
       popularity,
-    } = (req.body ?? {}) as {
-      name: string;
-      english_name: string;
-      pid: string;
-      price: number;
-      origin: string;
-      processing: string;
-      roast: string;
-      stock: number;
-      weight: string;
-      flavor_type: string;
-      description: string;
-      imgIds?: number[];
-      acidity: number;
-      sweetness: number;
-      body: number;
-      aftertaste: number;
-      clarity: number;
-      popularity: number;
-    };
+    } = (req.body ?? {}) as CreateProductBody;
 
     // 驗證必填欄位
     if (!pid || !name) {
@@ -296,7 +361,7 @@ export async function createProductHandler(req: Request, res: Response) {
     }
 
     // 準備建立資料
-    const createData: Record<string, unknown> = {
+    const createData: ProductCreateData = {
       name,
       english_name,
       pid,
