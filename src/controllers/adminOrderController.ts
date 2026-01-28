@@ -5,8 +5,10 @@ import {
   getAvailableCarriers,
   importPackages,
   getTrackingByUuid,
+  getBlackCatCarrierId,
 } from "@/services/trackService";
 
+// 全部訂單
 export async function orderListHandler(req: Request, res: Response) {
   try {
     // 解析分頁參數，給預設值
@@ -72,6 +74,7 @@ export async function orderListHandler(req: Request, res: Response) {
   }
 }
 
+// 單一訂單
 export async function singleOrderHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params; // 從 URL 參數取得 order_number
@@ -96,20 +99,7 @@ export async function singleOrderHandler(req: Request, res: Response) {
   }
 }
 
-// 取得黑貓 carrier_id
-let BlackCatCarrierId: string | null = null;
-
-async function getBlackCatCarrierId() {
-  if (BlackCatCarrierId) return BlackCatCarrierId;
-
-  const carriers = await getAvailableCarriers();
-  const blackcat = carriers.find((c) => c.name.includes("黑貓"));
-  if (!blackcat) throw new Error("找不到黑貓宅急便 carrier_id");
-
-  BlackCatCarrierId = blackcat.id;
-  return blackcat.id;
-}
-
+// 更新訂單物流編號、時間，並將訂單狀態改為shipped
 export async function updateOrderHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params;
@@ -214,7 +204,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
 // =========================================================
 
 // 抓取Track.tw 最新資料，同步訂單狀態
-async function syncOrderLogisticsCore(order: any) {
+async function syncOrderLogisticsCore(order) {
   if (!order.UUID || !order.documentId) {
     return { updated: false, order };
   }

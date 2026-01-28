@@ -48,3 +48,17 @@ export async function getTrackingByUuid(uuid: string) {
   const { data } = await trackTw.get(`/package/tracking/${uuid}`);
   return data;
 }
+
+// 取得黑貓 carrier_id
+let BlackCatCarrierId: string | null = null;
+
+export async function getBlackCatCarrierId() {
+  if (BlackCatCarrierId) return BlackCatCarrierId;
+
+  const carriers = await getAvailableCarriers();
+  const blackcat = carriers.find((c) => c.name.includes("黑貓"));
+  if (!blackcat) throw new Error("找不到黑貓宅急便 carrier_id");
+
+  BlackCatCarrierId = blackcat.id;
+  return blackcat.id;
+}
