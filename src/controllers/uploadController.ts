@@ -1,6 +1,31 @@
 import { Request, Response } from "express";
 import FormData from "form-data";
 import { strapiClient } from "@/services/dataService";
+import { UploadedFile } from "express-fileupload";
+import { AxiosError } from "axios";
+
+// ========== 類型定義 ==========
+
+interface StrapiErrorResponse {
+  error?: {
+    message?: string;
+  };
+}
+
+interface StrapiUploadResponse {
+  id: number;
+  name: string;
+  url: string;
+  mime: string;
+  size: number;
+}
+
+// express-fileupload 的檔案集合類型
+interface UploadedFiles {
+  [fieldname: string]: UploadedFile | UploadedFile[];
+}
+
+// ========== Handler 函數 ==========
 
 /**
  * 處理圖片上傳到 Strapi
@@ -17,17 +42,18 @@ export async function uploadImageHandler(req: Request, res: Response) {
     }
 
     // 類型斷言處理 express-fileupload 的檔案
-    const uploadedFiles = req.files as { [fieldname: string]: any };
+    const uploadedFiles = req.files as UploadedFiles;
 
     // 取得上傳的檔案 (支援多檔案上傳)
-    const files = Array.isArray(uploadedFiles.files)
-      ? uploadedFiles.files
-      : [uploadedFiles.files];
+    const filesInput = uploadedFiles.files;
+    const files: UploadedFile[] = Array.isArray(filesInput)
+      ? filesInput
+      : [filesInput];
 
     // 建立 FormData 準備轉發給 Strapi
     const formData = new FormData();
 
-    files.forEach((file: any) => {
+    files.forEach((file: UploadedFile) => {
       // 驗證檔案類型 - 只允許 WebP
       if (file.mimetype !== "image/webp") {
         throw new Error(`只支援 WebP 格式，收到的格式: ${file.mimetype}`);
@@ -49,41 +75,56 @@ export async function uploadImageHandler(req: Request, res: Response) {
     console.log(`📤 上傳 ${files.length} 個檔案到 Strapi`);
 
     // 使用 strapiClient 轉發給 Strapi 的 upload API
-    const strapiResponse = await strapiClient.post("/api/upload", formData, {
-      headers: {
-        ...formData.getHeaders(),
-        // Authorization header 已經在 strapiClient 中設定
+    const strapiResponse = await strapiClient.post<StrapiUploadResponse[]>(
+      "/api/upload",
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+          // Authorization header 已經在 strapiClient 中設定
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       },
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-    });
+    );
 
     console.log("✅ 上傳成功:", strapiResponse.data?.length, "個檔案");
 
     // 回傳上傳成功的檔案資訊
     return res.json(strapiResponse.data);
-  } catch (error: any) {
-    console.error("[uploadImageHandler error]", error?.response?.data ?? error);
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError<StrapiErrorResponse>;
+
+    console.error(
+      "[uploadImageHandler error]",
+      axiosError?.response?.data ?? error,
+    );
 
     // 處理不同類型的錯誤
     let errorMessage = "上傳圖片失敗";
     let statusCode = 500;
 
-    if (error.message?.includes("只支援 WebP 格式")) {
-      errorMessage = error.message;
-      statusCode = 400;
-    } else if (error.message?.includes("檔案大小超過限制")) {
-      errorMessage = error.message;
-      statusCode = 400;
-    } else if (error?.response?.data) {
-      errorMessage = error.response.data.error?.message || errorMessage;
-      statusCode = error.response.status || 500;
+    if (error instanceof Error) {
+      if (error.message?.includes("只支援 WebP 格式")) {
+        errorMessage = error.message;
+        statusCode = 400;
+      } else if (error.message?.includes("檔案大小超過限制")) {
+        errorMessage = error.message;
+        statusCode = 400;
+      }
+    }
+
+    if (axiosError?.response?.data) {
+      errorMessage = axiosError.response.data.error?.message || errorMessage;
+      statusCode = axiosError.response.status || 500;
     }
 
     return res.status(statusCode).json({
       success: false,
       error: errorMessage,
-      details: error?.response?.data || error?.message,
+      details:
+        axiosError?.response?.data ||
+        (error instanceof Error ? error.message : "Unknown error"),
     });
   }
 }
@@ -115,24 +156,31 @@ export async function deleteImageHandler(req: Request, res: Response) {
       success: true,
       message: "圖片刪除成功",
     });
-  } catch (error: any) {
-    console.error("[deleteImageHandler error]", error?.response?.data ?? error);
+  } catch (error: unknown) {
+    const axiosError = error as AxiosError<StrapiErrorResponse>;
+
+    console.error(
+      "[deleteImageHandler error]",
+      axiosError?.response?.data ?? error,
+    );
 
     let errorMessage = "刪除圖片失敗";
     let statusCode = 500;
 
-    if (error?.response?.status === 404) {
+    if (axiosError?.response?.status === 404) {
       errorMessage = "找不到指定的圖片";
       statusCode = 404;
-    } else if (error?.response?.data) {
-      errorMessage = error.response.data.error?.message || errorMessage;
-      statusCode = error.response.status || 500;
+    } else if (axiosError?.response?.data) {
+      errorMessage = axiosError.response.data.error?.message || errorMessage;
+      statusCode = axiosError.response.status || 500;
     }
 
     return res.status(statusCode).json({
       success: false,
       error: errorMessage,
-      details: error?.response?.data || error?.message,
+      details:
+        axiosError?.response?.data ||
+        (error instanceof Error ? error.message : "Unknown error"),
     });
   }
 }

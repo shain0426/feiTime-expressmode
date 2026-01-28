@@ -8,6 +8,67 @@ import {
   getBlackCatCarrierId,
 } from "@/services/trackService";
 
+// ========== 類型定義 ==========
+
+interface Order {
+  documentId?: string;
+  order_number: string;
+  subtotal: number;
+  createdAt: string;
+  shipping_fee: number;
+  total_amount: number;
+  order_status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+  payment_status: "unpaid" | "paid" | "refunded";
+  paid_at?: string;
+  recipient_name: string;
+  recipient_phone: string;
+  recipient_address: string;
+  customer_note?: string;
+  shipping_method: string;
+  tracking_number?: string;
+  shipped_at?: string;
+  payment_method?: "credit_card" | "cod" | "bank_transfer";
+  UUID?: string;
+}
+
+interface PackageHistory {
+  time: string;
+  checkpoint_status: string;
+  status: string;
+}
+
+interface TrackingData {
+  package_history?: PackageHistory[];
+}
+
+interface SyncResult {
+  updated: boolean;
+  order: Order;
+  latest?: PackageHistory;
+  tracking?: TrackingData;
+  error?: unknown;
+}
+
+interface UpdateOrderBody {
+  tracking_number?: string;
+  shipped_at?: string;
+}
+
+interface OrderUpdateData extends Record<string, unknown> {
+  tracking_number: string;
+  shipped_at: string;
+  order_status: "shipped";
+  UUID?: string;
+}
+
+interface OrderStatusPatch extends Record<string, unknown> {
+  order_status: "delivered";
+  payment_status?: "paid";
+  paid_at?: string;
+}
+
+// ========== Handler 函數 ==========
+
 // 全部訂單
 export async function orderListHandler(req: Request, res: Response) {
   try {
@@ -19,16 +80,6 @@ export async function orderListHandler(req: Request, res: Response) {
     const paid_at = req.query.paid_at as string;
     const shipped_at = req.query.shipped_at as string;
     const sort = req.query.sort as string | string[];
-
-    // 呼叫公版函式取得資料
-    // const data = await fetchStrapiData("products", "*", page, pageSize);
-
-    //假設你要加篩選條件就會變成:
-    // const data = await fetchStrapiData("products", "", 1, 100, {
-    //   fields: ["name", "price"],
-    //   filters: { origin: { $eq: "Taiwan" } },
-    //   sort: ["price:desc"],
-    // });
 
     const result = await fetchStrapiData("orders", "*", page, pageSize, {
       fields: [
@@ -104,10 +155,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
   try {
     const { order_number } = req.params;
     // req.body用來放「請求內容本體」，用在「送資料給後端」的請求
-    const { tracking_number, shipped_at } = (req.body ?? {}) as {
-      tracking_number?: string;
-      shipped_at?: string;
-    };
+    const { tracking_number, shipped_at } = (req.body ?? {}) as UpdateOrderBody;
 
     // 驗證必填欄位
     if (!tracking_number || !shipped_at) {
@@ -131,7 +179,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
     }
 
     // 訂單編號理論上是唯一的，所以拿第一筆訂單
-    const order = orders[0];
+    const order = orders[0] as Order;
     // 檢查 documentId 是否存在
     if (!order.documentId) {
       console.error("❌ 警告：documentId 不存在，訂單資料:", order);
@@ -167,7 +215,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
     }
 
     // 準備要更新的內容(物流編號和出貨時間)，並把訂單狀態改成shipped
-    const updateData: Record<string, any> = {
+    const updateData: OrderUpdateData = {
       tracking_number,
       shipped_at,
       order_status: "shipped",
@@ -204,7 +252,7 @@ export async function updateOrderHandler(req: Request, res: Response) {
 // =========================================================
 
 // 抓取Track.tw 最新資料，同步訂單狀態
-async function syncOrderLogisticsCore(order) {
+async function syncOrderLogisticsCore(order: Order): Promise<SyncResult> {
   if (!order.UUID || !order.documentId) {
     return { updated: false, order };
   }
@@ -227,7 +275,7 @@ async function syncOrderLogisticsCore(order) {
 
     // 3. 判斷是否需要更新狀態為 delivered
     if (checkpoint === "delivered" && order.order_status !== "delivered") {
-      const patch: any = {
+      const patch: OrderStatusPatch = {
         order_status: "delivered",
       };
 
@@ -240,7 +288,11 @@ async function syncOrderLogisticsCore(order) {
         patch.paid_at = new Date().toISOString();
       }
 
-      const updated = await putStrapiData("orders", order.documentId, patch);
+      const updated = (await putStrapiData(
+        "orders",
+        order.documentId,
+        patch,
+      )) as Order;
       return { updated: true, order: updated, latest, tracking };
     }
 
@@ -263,7 +315,7 @@ export async function bulkSyncLogisticsHandler(req: Request, res: Response) {
       includeMeta: true,
     });
 
-    const orders = result.data || [];
+    const orders = (result.data || []) as Order[];
     if (orders.length === 0) {
       return res.json({
         success: true,
@@ -305,7 +357,7 @@ export async function getOrderTrackingHandler(req: Request, res: Response) {
       return res.status(404).json({ error: "找不到此訂單" });
     }
 
-    const order = orders[0];
+    const order = orders[0] as Order;
 
     // 2. 檢查是否有 UUID (沒出貨就不會有物流資訊)
     if (!order.UUID) {
