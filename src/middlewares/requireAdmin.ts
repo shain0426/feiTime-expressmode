@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import "@/types/auth";
 
 const STRAPI_URL = process.env.STRAPI_URL;
 
@@ -31,13 +32,14 @@ export async function requireAdmin(
       return res.status(403).json({ message: "Forbidden (not admin)" });
     }
 
-    (req as any).user = user;
+    req.user = user;
     next();
-  } catch (err: any) {
+  } catch (err) {
+    const axiosError = err as AxiosError;
     console.log(
       "[requireAdmin] verify token failed:",
-      err?.response?.status,
-      err?.response?.data,
+      axiosError?.response?.status,
+      axiosError?.response?.data,
     );
     return res.status(401).json({ message: "Invalid token" });
   }

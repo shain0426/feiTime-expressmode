@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { userService } from "@/services/authService";
+import { UpdateUserPayload } from "@/types/auth";
 
 function getTokenFromReq(req: Request) {
   return req.headers.authorization?.replace("Bearer ", "");
@@ -99,7 +100,7 @@ export const userController = {
       const { blocked, user_role, username, phone_number, shipping_address } =
         req.body;
 
-      const payload: Record<string, any> = {
+      const payload: UpdateUserPayload = {
         ...(typeof blocked === "boolean" ? { blocked } : {}),
         ...(user_role ? { user_role } : {}),
         ...(username ? { username } : {}),
@@ -134,7 +135,7 @@ export const userController = {
       // ✅ 白名單：只允許改這些
       const { username, phone_number, shipping_address } = req.body;
 
-      const payload: Record<string, any> = {
+      const payload: UpdateUserPayload = {
         ...(username !== undefined ? { username } : {}),
         ...(phone_number !== undefined ? { phone_number } : {}),
         ...(shipping_address !== undefined ? { shipping_address } : {}),

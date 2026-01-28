@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { fetchStrapiData, putStrapiData } from "@/services/dataService";
 import { handleError } from "@/utils/errorHandler";
 import {
-  getAvailableCarriers,
   importPackages,
   getTrackingByUuid,
   getBlackCatCarrierId,
@@ -79,7 +78,6 @@ export async function orderListHandler(req: Request, res: Response) {
     const createdAt = req.query.createdAt as string;
     const paid_at = req.query.paid_at as string;
     const shipped_at = req.query.shipped_at as string;
-    const sort = req.query.sort as string | string[];
 
     const result = await fetchStrapiData("orders", "*", page, pageSize, {
       fields: [

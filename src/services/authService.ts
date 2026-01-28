@@ -1,5 +1,5 @@
 import { strapiClient } from "@/services/dataService";
-import { AuthResponse } from "@/types/auth";
+import { AuthResponse, UpdateUserPayload } from "@/types/auth";
 
 /**
  * 註冊用戶資料型別
@@ -114,7 +114,7 @@ export const userService = {
     return data;
   },
 
-  async updateUser(id: string, userData: any, token: string) {
+  async updateUser(id: string, userData: UpdateUserPayload, token: string) {
     const { data } = await strapiClient.put(`/api/users/${id}`, userData, {
       headers: { Authorization: `Bearer ${token}` },
     });

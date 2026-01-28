@@ -51,3 +51,26 @@ export interface StrapiAuthResponse {
 export interface GoogleCallbackQuery {
   access_token?: string;
 }
+
+/**
+ * 更新用戶資料的 payload 型別
+ */
+export interface UpdateUserPayload {
+  blocked?: boolean;
+  user_role?: "Member" | "Admin";
+  username?: string;
+  phone_number?: string;
+  shipping_address?: string;
+}
+
+/**
+ * 擴展 Express Request 型別以包含 user 屬性
+ */
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      user?: StrapiUser;
+    }
+  }
+}

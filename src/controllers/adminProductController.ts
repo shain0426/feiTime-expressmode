@@ -106,7 +106,6 @@ export async function ProductListHandler(req: Request, res: Response) {
   try {
     const page = Number(req.query.page) || 1;
     const pageSize = Number(req.query.pageSize) || 1000;
-    const sort = req.query.sort as string | string[];
     const result = await fetchStrapiData("products", "*", page, pageSize, {
       fields: [
         "documentId",
