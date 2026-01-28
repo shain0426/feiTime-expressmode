@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { geminiText } from "@/services/geminiClient";
 import { fetchStrapiData } from "@/services/dataService";
 import type { GeminiMessage } from "@/types/gemini";
+import type { StrapiImage, StrapiProduct, CartItemInput, ScoredProduct } from "@/types/cart";
 
 /**
  * 使用者風味偏好資料結構 (來自 Coffee ID 測驗)
@@ -29,7 +30,7 @@ interface ProductFlavorProfile {
     flavor_tags?: string[];
     price: number;
     stock?: number;
-    img?: any[];
+    img?: StrapiImage[];
 }
 
 /**
@@ -130,9 +131,9 @@ async function getPersonalizedRecommendations(
         }
 
         // 計算每個商品的契合度並排序
-        const scoredProducts = products
-            .filter((p: any) => !excludeIds.includes(p.id))
-            .map((p: any) => ({
+        const scoredProducts = (products as StrapiProduct[])
+            .filter((p: StrapiProduct) => !excludeIds.includes(p.id))
+            .map((p: StrapiProduct) => ({
                 id: p.id,
                 documentId: p.documentId,
                 name: p.name,
@@ -146,7 +147,7 @@ async function getPersonalizedRecommendations(
                 img: p.img,
                 matchScore: calculateMatchScore(userProfile, p),
             }))
-            .sort((a: any, b: any) => b.matchScore - a.matchScore)
+            .sort((a: ScoredProduct, b: ScoredProduct) => b.matchScore - a.matchScore)
             .slice(0, limit);
 
         return scoredProducts;
@@ -247,13 +248,13 @@ export async function cartRecommendationHandler(
         }
 
         // 2. 計算購物車商品的平均契合度
-        const cartItemIds = (cartItems || []).map((item: any) => item.id);
+        const cartItemIds = (cartItems || []).map((item: CartItemInput) => item.id);
         let avgMatchScore = 85; // 預設值
         let featuredItemName = "您選的咖啡";
 
         if (cartItems && cartItems.length > 0) {
-            const scores = cartItems.map((item: any) =>
-                calculateMatchScore(userProfile, item)
+            const scores = cartItems.map((item: CartItemInput) =>
+                calculateMatchScore(userProfile, item as unknown as ProductFlavorProfile)
             );
             avgMatchScore = Math.round(
                 scores.reduce((a: number, b: number) => a + b, 0) / scores.length
