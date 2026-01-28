@@ -18,6 +18,9 @@ export async function productHandler(req: Request, res: Response) {
     const pageSize = Number(req.query.pageSize) || 24;
 
     // 格式必須是：{ filters: { 欄位名(篩選什麼): { 運算子(怎麼篩選): 值 } } }
+
+    const finalSort = sort ? (Array.isArray(sort) ? sort : [sort]) : ["id:asc"];
+
     const options = {
       filters: {
         ...(roast && { roast: { $eq: roast } }),
@@ -30,7 +33,7 @@ export async function productHandler(req: Request, res: Response) {
         ...(processing && { processing: { $eq: processing } }),
         ...(flavor_type && { flavor_type: { $eq: flavor_type } }),
       },
-      ...(sort && { sort: Array.isArray(sort) ? sort : [sort] }),
+      sort: finalSort,
       // 因為在後端 services > dataServices.ts 的 fetchStrapiData函數 用TS限制 sort要是一個字串陣列
       // 所以在這邊要確保 sort 一定是陣列
       // {sort: Array.isArray(sort) ? sort : [sort] }
